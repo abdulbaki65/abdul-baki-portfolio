@@ -1,10 +1,20 @@
-const GEMINI_MODEL_ENDPOINT =
-  'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent';
+const GEMINI_API_BASE =
+  'https://generativelanguage.googleapis.com/v1beta/models';
 
-const SYSTEM_INSTRUCTION = `You are KHIORA, the helpful, polite Electrical-Engineering-themed AI assistant for Abdul Baki's personal portfolio website.
+const MODEL_FALLBACK_LIST = [
+  'gemini-3.5-flash-lite',
+  'gemini-3.6-flash',
+  'gemini-3.8-flash',
+];
 
-Key facts about Abdul Baki:
-- Role: Electrical Engineering student at Bogura Government Polytechnic Institute (বগুড়া সরকারি পলিটেকনিক ইনস্টিটিউট), located in Bogura, Bangladesh. Never mention or invent any semester number.
+const SYSTEM_INSTRUCTION = `You are KHIORA, a fast, helpful, and polite AI assistant on Abdul Baki's Electrical Engineering portfolio website.
+
+You should gladly answer BOTH:
+1. Questions about Abdul Baki, his background, skills, certifications, and how to contact him.
+2. Any general questions from visitors—including Electrical Engineering concepts, house wiring basics and safety, technology, programming, study topics, history, or general everyday Q&A.
+
+Key facts about Abdul Baki (use when asked about him):
+- Role: Electrical Engineering student at Bogura Government Polytechnic Institute (বগুড়া সরকারি পলিটেকনিক ইনস্টিটিউট), Bogura, Bangladesh. Never mention or invent any semester number.
 - Certification: EIM LV-3 Certified (Electrical Installation & Maintenance Level-3 — practical electrical systems, safety standards, inspection, and maintenance).
 - Core Skills:
   1. EIM LV-3 (Certified Electrical Installation & Maintenance Level-3)
@@ -20,10 +30,10 @@ Key facts about Abdul Baki:
   - Instagram: @abdul_baki_6.5 (https://www.instagram.com/abdul_baki_6.5)
   - Facebook: Abdulbaki231 (https://www.facebook.com/Abdulbaki231)
 
-Guidelines:
-- Always reply concisely, clearly, and politely in whichever language (Bengali or English) the user writes in.
-- Stay truthful to the facts above; if asked something unrelated to Abdul Baki or his engineering background, answer briefly if helpful or politely guide the visitor back to Abdul Baki's skills, projects, or contact options.
-- Keep responses compact and easy to read in a small chat widget (2–5 sentences or short bullet points).`;
+Response guidelines:
+- Always reply politely, accurately, and concisely in whichever language (Bengali or English) the user writes in.
+- Keep answers clear and easy to read inside a compact chat window (short paragraphs or crisp bullet points).
+- For electrical or house wiring safety topics, always emphasize safe practices (such as turning off main power/MCB, proper earthing, and consulting a certified technician when working with live mains).`;
 
 const MAX_MESSAGE_LENGTH = 1500;
 const MAX_HISTORY_ITEMS = 10;
@@ -154,70 +164,92 @@ export async function onRequestPost(context) {
       });
     }
 
-    const endpointUrl = `${GEMINI_MODEL_ENDPOINT}?key=${encodeURIComponent(apiKey)}`;
-
-    const geminiResponse = await fetch(endpointUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
+    const requestPayload = JSON.stringify({
+      systemInstruction: {
+        parts: [{ text: SYSTEM_INSTRUCTION }],
       },
-      body: JSON.stringify({
-        systemInstruction: {
-          parts: [{ text: SYSTEM_INSTRUCTION }],
-        },
-        contents,
-      }),
+      contents,
     });
 
-    const rawResponseText = await geminiResponse.text();
-    let geminiData = null;
-    try {
-      geminiData = rawResponseText ? JSON.parse(rawResponseText) : null;
-    } catch {
-      geminiData = null;
-    }
+    const encodedKey = encodeURIComponent(apiKey);
+    let lastStatus = 502;
+    let lastError = 'Unable to reach Gemini API.';
 
-    if (!geminiResponse.ok) {
-      const upstreamError =
-        geminiData?.error?.message ||
-        geminiData?.message ||
-        rawResponseText ||
-        geminiResponse.statusText ||
-        'Unknown Gemini API error';
+    for (let i = 0; i < MODEL_FALLBACK_LIST.length; i++) {
+      const model = MODEL_FALLBACK_LIST[i];
+      const hasNextModel = i < MODEL_FALLBACK_LIST.length - 1;
+      const endpointUrl = `${GEMINI_API_BASE}/${model}:generateContent?key=${encodedKey}`;
 
-      const safeError = sanitizeErrorText(String(upstreamError), apiKey);
-      console.error(
-        `[KHIORA /api/chat] Gemini API error (${geminiResponse.status}):`,
-        safeError
-      );
-
-      return jsonResponse(
-        {
-          status: geminiResponse.status,
-          error: safeError,
+      const geminiResponse = await fetch(endpointUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
         },
-        geminiResponse.status
-      );
-    }
+        body: requestPayload,
+      });
 
-    const parts = geminiData?.candidates?.[0]?.content?.parts;
-    const replyText = Array.isArray(parts)
-      ? parts
-          .map((part) => (typeof part?.text === 'string' ? part.text : ''))
-          .join('')
-          .trim()
-      : '';
+      const rawResponseText = await geminiResponse.text();
+      let geminiData = null;
+      try {
+        geminiData = rawResponseText ? JSON.parse(rawResponseText) : null;
+      } catch {
+        geminiData = null;
+      }
 
-    if (!replyText) {
-      const emptyErr =
-        geminiData?.promptFeedback?.blockReason
+      if (!geminiResponse.ok) {
+        const upstreamError =
+          geminiData?.error?.message ||
+          geminiData?.message ||
+          rawResponseText ||
+          geminiResponse.statusText ||
+          'Unknown Gemini API error';
+
+        const safeError = sanitizeErrorText(String(upstreamError), apiKey);
+        lastStatus = geminiResponse.status;
+        lastError = safeError;
+
+        console.error(
+          `[KHIORA /api/chat] Model "${model}" failed (${geminiResponse.status}):`,
+          safeError
+        );
+
+        // Automatically fall back to the next model on transient capacity/rate errors (503 or 429)
+        if (
+          (geminiResponse.status === 503 || geminiResponse.status === 429) &&
+          hasNextModel
+        ) {
+          continue;
+        }
+
+        return jsonResponse(
+          {
+            status: geminiResponse.status,
+            error: safeError,
+          },
+          geminiResponse.status
+        );
+      }
+
+      const parts = geminiData?.candidates?.[0]?.content?.parts;
+      const replyText = Array.isArray(parts)
+        ? parts
+            .map((part) => (typeof part?.text === 'string' ? part.text : ''))
+            .join('')
+            .trim()
+        : '';
+
+      if (!replyText) {
+        const emptyErr = geminiData?.promptFeedback?.blockReason
           ? `Response blocked by safety filter (${geminiData.promptFeedback.blockReason}).`
-          : 'Gemini API returned an empty response.';
-      console.error('[KHIORA /api/chat] Empty response:', emptyErr);
-      return jsonResponse({ status: 502, error: emptyErr }, 502);
+          : `Model "${model}" returned an empty response.`;
+        console.error('[KHIORA /api/chat] Empty response:', emptyErr);
+        return jsonResponse({ status: 502, error: emptyErr }, 502);
+      }
+
+      return jsonResponse({ reply: replyText }, 200);
     }
 
-    return jsonResponse({ reply: replyText }, 200);
+    return jsonResponse({ status: lastStatus, error: lastError }, lastStatus);
   } catch (err) {
     const errMsg = sanitizeErrorText(
       err instanceof Error ? err.message : 'Unexpected server error.',
