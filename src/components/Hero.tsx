@@ -1,11 +1,15 @@
 import { useState } from 'react';
-import { ArrowRight, Mail, Zap } from 'lucide-react';
+import { ArrowRight, Mail, QrCode, Zap } from 'lucide-react';
 import { motion } from 'motion/react';
 import { useLanguage } from '../context/LanguageContext';
 import { PROFILE_IMAGE_URL } from '../data/portfolioData';
 import { TRANSLATIONS } from '../data/translations';
 
-export function Hero() {
+interface HeroProps {
+  onOpenDigitalCard: () => void;
+}
+
+export function Hero({ onOpenDigitalCard }: HeroProps) {
   const { lang, isBn } = useLanguage();
   const t = TRANSLATIONS[lang].hero;
   const [imgError, setImgError] = useState(false);
@@ -58,10 +62,10 @@ export function Hero() {
           </p>
 
           {/* CTA Buttons */}
-          <div className="mt-9 flex w-full flex-col items-center gap-3.5 sm:w-auto sm:flex-row">
+          <div className="mt-9 flex w-full flex-col flex-wrap items-center gap-3 sm:w-auto sm:flex-row">
             <a
               href="#contact"
-              className="inline-flex min-h-[46px] w-full items-center justify-center gap-2.5 rounded-xl bg-[#00E5FF] px-7 py-3 text-sm font-semibold text-[#070B14] shadow-[0_8px_28px_-6px_rgba(0,229,255,0.45)] transition-transform duration-150 hover:-translate-y-0.5 hover:bg-cyan-300 whitespace-nowrap shrink-0 sm:w-auto focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#00E5FF]"
+              className="inline-flex min-h-[46px] w-full items-center justify-center gap-2.5 rounded-xl bg-[#00E5FF] px-6 py-3 text-sm font-semibold text-[#070B14] shadow-[0_8px_28px_-6px_rgba(0,229,255,0.45)] transition-transform duration-150 hover:-translate-y-0.5 hover:bg-cyan-300 whitespace-nowrap shrink-0 sm:w-auto focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#00E5FF]"
             >
               <Mail className="h-4 w-4" aria-hidden="true" />
               <span>{t.ctaContact}</span>
@@ -69,11 +73,20 @@ export function Hero() {
 
             <a
               href="#skills"
-              className="inline-flex min-h-[46px] w-full items-center justify-center gap-2 rounded-xl border border-slate-700/90 bg-[#0F172A]/80 px-7 py-3 text-sm font-semibold text-slate-100 transition-colors duration-150 hover:border-[#00E5FF]/55 hover:text-[#00E5FF] whitespace-nowrap shrink-0 sm:w-auto focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#00E5FF]"
+              className="inline-flex min-h-[46px] w-full items-center justify-center gap-2 rounded-xl border border-slate-700/90 bg-[#0F172A]/80 px-6 py-3 text-sm font-semibold text-slate-100 transition-colors duration-150 hover:border-[#00E5FF]/55 hover:text-[#00E5FF] whitespace-nowrap shrink-0 sm:w-auto focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#00E5FF]"
             >
               <span>{t.ctaSkills}</span>
               <ArrowRight className="h-4 w-4" aria-hidden="true" />
             </a>
+
+            <button
+              type="button"
+              onClick={onOpenDigitalCard}
+              className="inline-flex min-h-[46px] w-full items-center justify-center gap-2 rounded-xl border border-[#FFB300]/45 bg-[#FFB300]/10 px-5 py-3 text-sm font-semibold text-[#FFB300] transition-colors duration-150 hover:bg-[#FFB300] hover:text-[#070B14] whitespace-nowrap shrink-0 sm:w-auto focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FFB300]"
+            >
+              <QrCode className="h-4 w-4" aria-hidden="true" />
+              <span>{t.ctaCard}</span>
+            </button>
           </div>
         </motion.div>
 

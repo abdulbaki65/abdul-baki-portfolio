@@ -57,7 +57,7 @@ export function Navbar({ activeSection }: NavbarProps) {
         {/* Zone 2: Clean single-line navigation links */}
         <nav
           aria-label="Primary navigation"
-          className={`hidden items-center gap-5 lg:gap-7 md:flex ${isBn ? 'font-bn' : ''}`}
+          className={`hidden items-center gap-4 lg:gap-6 md:flex ${isBn ? 'font-bn' : ''}`}
         >
           {NAV_ITEMS.map((item) => {
             const isActive = activeSection === item.id;
@@ -66,7 +66,7 @@ export function Navbar({ activeSection }: NavbarProps) {
               <a
                 key={item.id}
                 href={item.href}
-                className={`relative py-1 text-sm font-medium transition-colors whitespace-nowrap shrink-0 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#00E5FF] ${
+                className={`relative py-1 text-[13px] font-medium transition-colors lg:text-sm whitespace-nowrap shrink-0 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#00E5FF] ${
                   isActive
                     ? 'text-[#00E5FF]'
                     : 'text-slate-300 hover:text-slate-50'

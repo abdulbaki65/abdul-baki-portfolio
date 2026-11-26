@@ -7,6 +7,7 @@ import {
   Loader2,
   MessageCircle,
   Phone,
+  QrCode,
   Send,
   Share2,
 } from 'lucide-react';
@@ -49,9 +50,14 @@ function SocialIcon({ type }: { type: SocialChannel['type'] }) {
   }
 }
 
-export function ContactSection() {
+interface ContactSectionProps {
+  onOpenDigitalCard: () => void;
+}
+
+export function ContactSection({ onOpenDigitalCard }: ContactSectionProps) {
   const { lang, isBn } = useLanguage();
   const t = TRANSLATIONS[lang].contact;
+  const cardText = TRANSLATIONS[lang].digitalCard;
 
   const [form, setForm] = useState<FormState>({
     name: '',
@@ -199,11 +205,21 @@ export function ContactSection() {
         <div className="mt-10 grid grid-cols-1 items-stretch gap-8 lg:grid-cols-12">
           {/* Left Column: Connect Directly */}
           <div className="glass-card flex flex-col rounded-2xl p-6 sm:p-8 lg:col-span-5">
-            <h3
-              className={`${isBn ? 'font-bn' : 'font-display'} text-xl font-bold text-slate-50`}
-            >
-              {t.connectTitle}
-            </h3>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <h3
+                className={`${isBn ? 'font-bn' : 'font-display'} text-xl font-bold text-slate-50`}
+              >
+                {t.connectTitle}
+              </h3>
+              <button
+                type="button"
+                onClick={onOpenDigitalCard}
+                className="inline-flex min-h-[36px] items-center gap-1.5 rounded-lg border border-[#FFB300]/45 bg-[#FFB300]/10 px-3 py-1.5 text-xs font-semibold text-[#FFB300] transition-colors hover:bg-[#FFB300] hover:text-[#070B14] whitespace-nowrap shrink-0 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FFB300]"
+              >
+                <QrCode className="h-3.5 w-3.5" aria-hidden="true" />
+                <span>{cardText.buttonLabel}</span>
+              </button>
+            </div>
             <p className="mt-1.5 text-sm text-slate-400">{t.connectSubtitle}</p>
 
             {/* Primary Call Now Card */}

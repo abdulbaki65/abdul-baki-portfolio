@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { AboutSection } from './components/AboutSection';
 import { CircuitBackground } from './components/CircuitBackground';
 import { ContactSection } from './components/ContactSection';
+import { DigitalCardModal } from './components/DigitalCardModal';
+import { EEToolsSection } from './components/EEToolsSection';
 import { Footer } from './components/Footer';
 import { Hero } from './components/Hero';
 import { InspirationsSection } from './components/InspirationsSection';
@@ -14,6 +16,7 @@ import { NAV_ITEMS } from './data/portfolioData';
 
 export default function App() {
   const [activeSection, setActiveSection] = useState<string>('home');
+  const [isCardOpen, setIsCardOpen] = useState<boolean>(false);
 
   useEffect(() => {
     const sectionIds = NAV_ITEMS.map((item) => item.id);
@@ -43,6 +46,8 @@ export default function App() {
     return () => observer.disconnect();
   }, []);
 
+  const openDigitalCard = () => setIsCardOpen(true);
+
   return (
     <LanguageProvider>
       <div className="relative min-h-screen bg-[#070B14] text-slate-100">
@@ -52,20 +57,26 @@ export default function App() {
           <Navbar activeSection={activeSection} />
 
           <main className="flex-1">
-            <Hero />
+            <Hero onOpenDigitalCard={openDigitalCard} />
             <SectionDivider variant="sine" accent="cyan" />
             <AboutSection />
             <SectionDivider variant="circuit" accent="cyan" />
             <SkillsSection />
+            <SectionDivider variant="sine" accent="cyan" />
+            <EEToolsSection />
             <SectionDivider variant="sine" accent="amber" />
             <InspirationsSection />
             <SectionDivider variant="circuit" accent="cyan" />
-            <ContactSection />
+            <ContactSection onOpenDigitalCard={openDigitalCard} />
           </main>
 
           <Footer />
         </div>
 
+        <DigitalCardModal
+          isOpen={isCardOpen}
+          onClose={() => setIsCardOpen(false)}
+        />
         <KhioraChatbot />
       </div>
     </LanguageProvider>

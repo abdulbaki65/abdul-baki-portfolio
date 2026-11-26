@@ -28,6 +28,7 @@ export interface SiteTranslations {
     lead: string;
     ctaContact: string;
     ctaSkills: string;
+    ctaCard: string;
     portraitAlt: string;
   };
   about: {
@@ -40,6 +41,65 @@ export interface SiteTranslations {
     heading: string;
     subtitle: string;
     items: Record<string, TranslatedSkill>;
+  };
+  eeTools: {
+    kicker: string;
+    heading: string;
+    subtitle: string;
+    tabLoad: string;
+    tabBill: string;
+    load: {
+      appliancesTitle: string;
+      reset: string;
+      customLoadLabel: string;
+      customLoadHint: string;
+      summaryTitle: string;
+      totalPower: string;
+      estimatedCurrent: string;
+      currentFormulaNote: string;
+      cableLabel: string;
+      mcbLabel: string;
+      emptyPrompt: string;
+      sendToBill: string;
+      disclaimer: string;
+      appliances: Record<string, string>;
+      phaseNote: string;
+    };
+    bill: {
+      inputsTitle: string;
+      totalLoadLabel: string;
+      dailyHoursLabel: string;
+      rateLabel: string;
+      rateHint: string;
+      summaryTitle: string;
+      dailyUnits: string;
+      monthlyUnits: string;
+      estimatedBill: string;
+      dailyCostLabel: string;
+      unitsSuffix: string;
+      currencySymbol: string;
+      bdtLabel: string;
+      note: string;
+      reset: string;
+    };
+  };
+  digitalCard: {
+    buttonLabel: string;
+    modalKicker: string;
+    modalTitle: string;
+    name: string;
+    title: string;
+    institute: string;
+    phoneLabel: string;
+    websiteLabel: string;
+    scanCaption: string;
+    qrAlt: string;
+    qrFallback: string;
+    saveVcf: string;
+    savedVcf: string;
+    copyLink: string;
+    copiedLink: string;
+    closeAria: string;
   };
   inspirations: {
     kicker: string;
@@ -111,6 +171,7 @@ export const TRANSLATIONS: Record<Language, SiteTranslations> = {
         home: 'Home',
         about: 'About',
         skills: 'Skills',
+        'ee-tools': 'EE Tools',
         inspirations: 'Inspirations',
         contact: 'Contact',
       },
@@ -130,6 +191,7 @@ export const TRANSLATIONS: Record<Language, SiteTranslations> = {
       lead: 'Dedicated to safe electrical installation, house wiring, systematic troubleshooting, and crafting clean modern interfaces for the web.',
       ctaContact: 'Contact Me',
       ctaSkills: 'Explore Skills',
+      ctaCard: 'Digital Card / QR',
       portraitAlt: 'Portrait of Abdul Baki, Electrical Engineering student',
     },
     about: {
@@ -190,6 +252,74 @@ export const TRANSLATIONS: Record<Language, SiteTranslations> = {
             'Exploring modern engineering tools, smart home automation concepts, and emerging AI technologies.',
         },
       },
+    },
+    eeTools: {
+      kicker: 'Interactive Utilities',
+      heading: 'EE Tools — Electrical Quick Calculators',
+      subtitle:
+        'Estimate residential house load, single-phase current, general cable/MCB sizing, and monthly electricity bills in seconds.',
+      tabLoad: 'House Load & Wire Estimator',
+      tabBill: 'Electricity Bill (kWh) Estimator',
+      load: {
+        appliancesTitle: 'Select Appliances & Quantities',
+        reset: 'Reset',
+        customLoadLabel: 'Custom Additional Load (Watts)',
+        customLoadHint: 'e.g. iron, microwave, induction cooker',
+        summaryTitle: 'Live Load Calculation',
+        totalPower: 'Total Power',
+        estimatedCurrent: 'Estimated Current (220V, PF 0.85)',
+        currentFormulaNote: 'Formula: I = P / (220 × 0.85)',
+        cableLabel: 'Reference Main Cable Size',
+        mcbLabel: 'Suggested MCB Rating',
+        emptyPrompt: 'Add appliances to calculate',
+        sendToBill: 'Estimate Monthly Bill for This Load',
+        disclaimer:
+          'General reference only: final cable gauge and MCB breaker selection depend on cable length (voltage drop), conduit type, earthing, and on-site inspection by a certified electrician.',
+        appliances: {
+          led: 'LED Light',
+          fan: 'Ceiling Fan',
+          tv: 'Television (TV)',
+          fridge: 'Refrigerator',
+          pump: 'Water Pump',
+          ac: 'AC (1.5 Ton)',
+        },
+        phaseNote: 'High load — consider split circuits or 3-phase review',
+      },
+      bill: {
+        inputsTitle: 'Usage Parameters',
+        totalLoadLabel: 'Total Load (Watts)',
+        dailyHoursLabel: 'Average Daily Usage (Hours / day)',
+        rateLabel: 'Rate per Unit (BDT / kWh)',
+        rateHint: 'Default 8.5 BDT/kWh (adjust to your tariff slab)',
+        summaryTitle: 'Estimated Energy & Bill',
+        dailyUnits: 'Daily Consumption',
+        monthlyUnits: 'Monthly Units (30 Days)',
+        estimatedBill: 'Estimated Monthly Bill',
+        dailyCostLabel: 'Approx. daily cost',
+        unitsSuffix: 'kWh',
+        currencySymbol: '৳',
+        bdtLabel: 'BDT',
+        note: 'Actual utility bills may vary slightly depending on progressive tariff slabs, demand charge, meter rent, and VAT.',
+        reset: 'Reset Defaults',
+      },
+    },
+    digitalCard: {
+      buttonLabel: 'Digital Card / QR',
+      modalKicker: 'Digital Visiting Card',
+      modalTitle: 'Scan or Save Contact',
+      name: 'Abdul Baki',
+      title: 'Electrical Engineering Student • EIM LV-3 Certified',
+      institute: 'Bogura Government Polytechnic Institute',
+      phoneLabel: 'Phone / WhatsApp',
+      websiteLabel: 'Portfolio Website',
+      scanCaption: 'Scan QR code to open portfolio',
+      qrAlt: 'QR code linking to https://abdulbaki-e1m.pages.dev',
+      qrFallback: 'abdulbaki-e1m.pages.dev',
+      saveVcf: 'Save Contact (.vcf)',
+      savedVcf: 'Contact Saved!',
+      copyLink: 'Copy Link',
+      copiedLink: 'Link Copied!',
+      closeAria: 'Close Digital Visiting Card',
     },
     inspirations: {
       kicker: 'Knowledge & Reflection',
@@ -272,6 +402,7 @@ export const TRANSLATIONS: Record<Language, SiteTranslations> = {
         home: 'হোম',
         about: 'আমার সম্পর্কে',
         skills: 'দক্ষতা',
+        'ee-tools': 'ইই টুলস',
         inspirations: 'অনুপ্রেরণা',
         contact: 'যোগাযোগ',
       },
@@ -291,6 +422,7 @@ export const TRANSLATIONS: Record<Language, SiteTranslations> = {
       lead: 'নিরাপদ ইলেকট্রিক্যাল ইনস্টলেশন, হাউজ ওয়্যারিং, সুশৃঙ্খল ট্রাবলশুটিং এবং আধুনিক ওয়েব ইন্টারফেস নির্মাণে নিবেদিত।',
       ctaContact: 'যোগাযোগ করুন',
       ctaSkills: 'দক্ষতা দেখুন',
+      ctaCard: 'ডিজিটাল কার্ড / QR',
       portraitAlt: 'আব্দুল বাকি — ইলেকট্রিক্যাল ইঞ্জিনিয়ারিং স্টুডেন্টের প্রতিকৃতি',
     },
     about: {
@@ -351,6 +483,74 @@ export const TRANSLATIONS: Record<Language, SiteTranslations> = {
             'আধুনিক ইঞ্জিনিয়ারিং টুলস, স্মার্ট হোম অটোমেশন ধারণা এবং নতুন কৃত্রিম বুদ্ধিমত্তা (AI) প্রযুক্তি অন্বেষণ।',
         },
       },
+    },
+    eeTools: {
+      kicker: 'ইন্টারেক্টিভ ইঞ্জিনিয়ারিং টুলস',
+      heading: 'ইই টুলস — ইলেকট্রিক্যাল কুইক ক্যালকুলেটর',
+      subtitle:
+        'বাসাবাড়ির মোট লোড, সিঙ্গেল-ফেজ কারেন্ট, তার ও MCB-এর সাধারণ ধারণা এবং মাসিক বিদ্যুৎ বিল মুহূর্তেই হিসাব করুন।',
+      tabLoad: 'হাউজ লোড ও তার নির্ণায়ক',
+      tabBill: 'বিদ্যুৎ বিল (ইউনিট) হিসাব',
+      load: {
+        appliancesTitle: 'বৈদ্যুতিক যন্ত্রপাতি ও সংখ্যা নির্বাচন করুন',
+        reset: 'রিসেট',
+        customLoadLabel: 'অতিরিক্ত কাস্টম লোড (ওয়াট)',
+        customLoadHint: 'যেমন: ইস্ত্রি, মাইক্রোওয়েভ, ইন্ডাকশন কুকার',
+        summaryTitle: 'তাৎক্ষণিক লোড হিসাব',
+        totalPower: 'মোট পাওয়ার',
+        estimatedCurrent: 'আনুমানিক কারেন্ট (২২০V, PF 0.85)',
+        currentFormulaNote: 'সূত্র: I = P / (220 × 0.85)',
+        cableLabel: 'মেইন তারের সাধারণ সাইজ',
+        mcbLabel: 'সম্ভাব্য MCB ব্রেকার রেটিং',
+        emptyPrompt: 'হিসাব দেখতে যন্ত্র যোগ করুন',
+        sendToBill: 'এই লোডের মাসিক বিল হিসাব করুন',
+        disclaimer:
+          'সতর্কতা: এটি একটি সাধারণ প্রাথমিক ধারণা মাত্র। চূড়ান্ত তারের সাইজ ও MCB নির্বাচন তারের দূরত্ব (ভোল্টেজ ড্রপ), ওয়্যারিং পদ্ধতি ও সরেজমিন পরিদর্শনের ওপর নির্ভর করে।',
+        appliances: {
+          led: 'এলইডি লাইট (LED)',
+          fan: 'সিলিং ফ্যান',
+          tv: 'টেলিভিশন (TV)',
+          fridge: 'ফ্রিজ (Refrigerator)',
+          pump: 'পানির পাম্প',
+          ac: 'এসি (১.৫ টন)',
+        },
+        phaseNote: 'অধিক লোড — একাধিক সার্কিট বা থ্রি-ফেজ যাচাই করুন',
+      },
+      bill: {
+        inputsTitle: 'বিদ্যুৎ ব্যবহারের তথ্য দিন',
+        totalLoadLabel: 'মোট লোড (ওয়াট / Watts)',
+        dailyHoursLabel: 'প্রতিদিন গড় ব্যবহার (ঘণ্টা / দিন)',
+        rateLabel: 'প্রতি ইউনিট দর (টাকা / kWh)',
+        rateHint: 'ডিফল্ট ৮.৫ টাকা/ইউনিট (আপনার ট্যারিফ অনুযায়ী বদলান)',
+        summaryTitle: 'আনুমানিক ইউনিট ও মাসিক বিল',
+        dailyUnits: 'দৈনিক ইউনিট',
+        monthlyUnits: 'মাসিক ইউনিট (৩০ দিন)',
+        estimatedBill: 'আনুমানিক মাসিক বিল',
+        dailyCostLabel: 'আনুমানিক দৈনিক খরচ',
+        unitsSuffix: 'ইউনিট (kWh)',
+        currencySymbol: '৳',
+        bdtLabel: 'টাকা',
+        note: 'বিদ্যুৎ বিলের ধাপ (ট্যারিফ স্ল্যাব), ডিমান্ড চার্জ, মিটার ভাড়া ও ভ্যাটের কারণে প্রকৃত বিল কিছুটা ভিন্ন হতে পারে।',
+        reset: 'ডিফল্ট রিসেট',
+      },
+    },
+    digitalCard: {
+      buttonLabel: 'ডিজিটাল কার্ড / QR',
+      modalKicker: 'ডিজিটাল ভিজিটিং কার্ড',
+      modalTitle: 'QR স্ক্যান করুন বা কন্টাক্ট সেভ করুন',
+      name: 'আব্দুল বাকি',
+      title: 'ইলেকট্রিক্যাল ইঞ্জিনিয়ারিং স্টুডেন্ট • EIM LV-3 সার্টিফায়েড',
+      institute: 'বগুড়া সরকারি পলিটেকনিক ইনস্টিটিউট',
+      phoneLabel: 'ফোন / হোয়াটসঅ্যাপ',
+      websiteLabel: 'পোর্টফোলিও ওয়েবসাইট',
+      scanCaption: 'পোর্টফোলিও খুলতে QR কোড স্ক্যান করুন',
+      qrAlt: 'https://abdulbaki-e1m.pages.dev এর QR কোড',
+      qrFallback: 'abdulbaki-e1m.pages.dev',
+      saveVcf: 'কন্টাক্ট সেভ করুন (.vcf)',
+      savedVcf: 'কন্টাক্ট সেভ হয়েছে!',
+      copyLink: 'লিংক কপি করুন',
+      copiedLink: 'লিংক কপি হয়েছে!',
+      closeAria: 'ডিজিটাল ভিজিটিং কার্ড বন্ধ করুন',
     },
     inspirations: {
       kicker: 'জ্ঞান ও অনুপ্রেরণা',

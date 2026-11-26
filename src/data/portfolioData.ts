@@ -53,11 +53,13 @@ export const PROFILE_IMAGE_URL =
 
 export const PHONE_DISPLAY = '01575586681';
 export const PHONE_HREF = 'tel:+8801575586681';
+export const PORTFOLIO_URL = 'https://abdulbaki-e1m.pages.dev';
 
 export const NAV_ITEMS: NavItem[] = [
   { id: 'home', label: 'Home', href: '#home' },
   { id: 'about', label: 'About', href: '#about' },
   { id: 'skills', label: 'Skills', href: '#skills' },
+  { id: 'ee-tools', label: 'EE Tools', href: '#ee-tools' },
   { id: 'inspirations', label: 'Inspirations', href: '#inspirations' },
   { id: 'contact', label: 'Contact', href: '#contact' },
 ];
