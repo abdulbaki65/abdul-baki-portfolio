@@ -464,7 +464,7 @@ export function ContactSection() {
             transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
             role="status"
             aria-live="polite"
-            className="fixed bottom-5 right-5 z-50 flex max-w-sm items-start gap-3 rounded-xl border border-[#00E5FF]/40 bg-[#0F172A]/95 p-4 text-slate-100 shadow-[0_18px_48px_-12px_rgba(0,0,0,0.8)] backdrop-blur-lg"
+            className="fixed bottom-20 right-4 z-50 flex max-w-sm items-start gap-3 rounded-xl border border-[#00E5FF]/40 bg-[#0F172A]/95 p-4 text-slate-100 shadow-[0_18px_48px_-12px_rgba(0,0,0,0.8)] backdrop-blur-lg sm:bottom-22 sm:right-6"
           >
             <CheckCircle2
               className="mt-0.5 h-5 w-5 shrink-0 text-[#00E5FF]"

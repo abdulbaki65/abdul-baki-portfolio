@@ -5,6 +5,7 @@ import { ContactSection } from './components/ContactSection';
 import { Footer } from './components/Footer';
 import { Hero } from './components/Hero';
 import { InspirationsSection } from './components/InspirationsSection';
+import { KhioraChatbot } from './components/KhioraChatbot';
 import { Navbar } from './components/Navbar';
 import { SectionDivider } from './components/SectionDivider';
 import { SkillsSection } from './components/SkillsSection';
@@ -62,6 +63,8 @@ export default function App() {
 
         <Footer />
       </div>
+
+      <KhioraChatbot />
     </div>
   );
 }
