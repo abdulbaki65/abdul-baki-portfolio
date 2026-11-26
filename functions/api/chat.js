@@ -1,4 +1,4 @@
-const GEMINI_API_URL =
+const GEMINI_MODEL_ENDPOINT =
   'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent';
 
 const SYSTEM_INSTRUCTION = `You are KHIORA, the helpful, polite Electrical-Engineering-themed AI assistant for Abdul Baki's personal portfolio website.
@@ -44,69 +44,122 @@ function jsonResponse(payload, status = 200) {
 }
 
 /**
+ * Normalize role strictly to "user" or "model" (never "assistant").
+ * @param {unknown} role
+ * @returns {"user" | "model" | null}
+ */
+function normalizeRole(role) {
+  if (role === 'user') return 'user';
+  if (role === 'model' || role === 'assistant') return 'model';
+  return null;
+}
+
+/**
+ * Redact the API key from any diagnostic error string before returning or logging.
+ * @param {string} text
+ * @param {string} apiKey
+ */
+function sanitizeErrorText(text, apiKey) {
+  if (!apiKey) return text;
+  return text.split(apiKey).join('[REDACTED]');
+}
+
+/**
  * Cloudflare Pages Function handler for POST /api/chat
  * @param {{ request: Request, env: Record<string, string | undefined> }} context
  */
 export async function onRequestPost(context) {
-  try {
-    const apiKey = context?.env?.GEMINI_API_KEY;
-    if (!apiKey || typeof apiKey !== 'string' || !apiKey.trim()) {
-      return jsonResponse(
-        {
-          error:
-            'KHIORA is not configured yet. Please set GEMINI_API_KEY in your Cloudflare Pages environment variables.',
-        },
-        503
-      );
-    }
+  const apiKey =
+    typeof context?.env?.GEMINI_API_KEY === 'string'
+      ? context.env.GEMINI_API_KEY.trim()
+      : '';
 
+  if (!apiKey) {
+    const missingMessage =
+      'Missing GEMINI_API_KEY environment variable in Cloudflare Pages settings.';
+    console.error('[KHIORA /api/chat] Status 500:', missingMessage);
+    return jsonResponse({ status: 500, error: missingMessage }, 500);
+  }
+
+  try {
     let body;
     try {
       body = await context.request.json();
     } catch {
-      return jsonResponse({ error: 'Invalid JSON request body.' }, 400);
+      const parseErr = 'Invalid JSON request body.';
+      console.error('[KHIORA /api/chat] Status 400:', parseErr);
+      return jsonResponse({ status: 400, error: parseErr }, 400);
     }
 
-    const rawMessage = typeof body?.message === 'string' ? body.message.trim() : '';
+    const rawMessage =
+      typeof body?.message === 'string' ? body.message.trim() : '';
     if (!rawMessage) {
-      return jsonResponse({ error: 'Please enter a message.' }, 400);
+      return jsonResponse(
+        { status: 400, error: 'Please enter a message.' },
+        400
+      );
     }
 
     if (rawMessage.length > MAX_MESSAGE_LENGTH) {
       return jsonResponse(
         {
+          status: 400,
           error: `Message is too long. Please keep it under ${MAX_MESSAGE_LENGTH} characters.`,
         },
         400
       );
     }
 
+    /** @type {Array<{ role: "user" | "model", parts: Array<{ text: string }> }>} */
     const contents = [];
 
     if (Array.isArray(body?.history)) {
       const recentHistory = body.history.slice(-MAX_HISTORY_ITEMS);
       for (const entry of recentHistory) {
         if (!entry || typeof entry !== 'object') continue;
-        const role = entry.role === 'model' ? 'model' : entry.role === 'user' ? 'user' : null;
-        const text = typeof entry.text === 'string' ? entry.text.trim() : '';
+        const role = normalizeRole(entry.role);
+        const text =
+          typeof entry.text === 'string'
+            ? entry.text.trim()
+            : typeof entry.content === 'string'
+              ? entry.content.trim()
+              : '';
         if (!role || !text) continue;
-        contents.push({
-          role,
-          parts: [{ text: text.slice(0, MAX_MESSAGE_LENGTH) }],
-        });
+
+        // Gemini requires conversation history to start with a "user" turn
+        if (contents.length === 0 && role !== 'user') continue;
+
+        const clipped = text.slice(0, MAX_MESSAGE_LENGTH);
+        const last = contents[contents.length - 1];
+        if (last && last.role === role) {
+          // Merge consecutive identical roles so turns strictly alternate
+          last.parts[0].text = `${last.parts[0].text}\n${clipped}`;
+        } else {
+          contents.push({
+            role,
+            parts: [{ text: clipped }],
+          });
+        }
       }
     }
 
-    contents.push({
-      role: 'user',
-      parts: [{ text: rawMessage }],
-    });
+    // Ensure the final turn is the current "user" message without consecutive user turns
+    const lastEntry = contents[contents.length - 1];
+    if (lastEntry && lastEntry.role === 'user') {
+      lastEntry.parts[0].text = `${lastEntry.parts[0].text}\n${rawMessage}`;
+    } else {
+      contents.push({
+        role: 'user',
+        parts: [{ text: rawMessage }],
+      });
+    }
 
-    const geminiResponse = await fetch(GEMINI_API_URL, {
+    const endpointUrl = `${GEMINI_MODEL_ENDPOINT}?key=${encodeURIComponent(apiKey)}`;
+
+    const geminiResponse = await fetch(endpointUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'x-goog-api-key': apiKey.trim(),
       },
       body: JSON.stringify({
         systemInstruction: {
@@ -116,16 +169,35 @@ export async function onRequestPost(context) {
       }),
     });
 
-    const geminiData = await geminiResponse.json().catch(() => null);
+    const rawResponseText = await geminiResponse.text();
+    let geminiData = null;
+    try {
+      geminiData = rawResponseText ? JSON.parse(rawResponseText) : null;
+    } catch {
+      geminiData = null;
+    }
 
     if (!geminiResponse.ok) {
-      const status = geminiResponse.status === 429 ? 429 : 502;
-      const friendlyMessage =
-        geminiResponse.status === 429
-          ? 'KHIORA is receiving too many requests right now. Please wait a moment and try again.'
-          : 'KHIORA encountered a temporary issue connecting to the AI service. Please try again shortly.';
+      const upstreamError =
+        geminiData?.error?.message ||
+        geminiData?.message ||
+        rawResponseText ||
+        geminiResponse.statusText ||
+        'Unknown Gemini API error';
 
-      return jsonResponse({ error: friendlyMessage }, status);
+      const safeError = sanitizeErrorText(String(upstreamError), apiKey);
+      console.error(
+        `[KHIORA /api/chat] Gemini API error (${geminiResponse.status}):`,
+        safeError
+      );
+
+      return jsonResponse(
+        {
+          status: geminiResponse.status,
+          error: safeError,
+        },
+        geminiResponse.status
+      );
     }
 
     const parts = geminiData?.candidates?.[0]?.content?.parts;
@@ -137,23 +209,21 @@ export async function onRequestPost(context) {
       : '';
 
     if (!replyText) {
-      return jsonResponse(
-        {
-          error:
-            'KHIORA could not generate a response for that message. Please try rephrasing your question.',
-        },
-        502
-      );
+      const emptyErr =
+        geminiData?.promptFeedback?.blockReason
+          ? `Response blocked by safety filter (${geminiData.promptFeedback.blockReason}).`
+          : 'Gemini API returned an empty response.';
+      console.error('[KHIORA /api/chat] Empty response:', emptyErr);
+      return jsonResponse({ status: 502, error: emptyErr }, 502);
     }
 
     return jsonResponse({ reply: replyText }, 200);
-  } catch {
-    return jsonResponse(
-      {
-        error:
-          'An unexpected server error occurred. Please try again in a moment.',
-      },
-      500
+  } catch (err) {
+    const errMsg = sanitizeErrorText(
+      err instanceof Error ? err.message : 'Unexpected server error.',
+      apiKey
     );
+    console.error('[KHIORA /api/chat] Unhandled error (500):', errMsg);
+    return jsonResponse({ status: 500, error: errMsg }, 500);
   }
 }

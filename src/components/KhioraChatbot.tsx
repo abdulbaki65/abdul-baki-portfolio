@@ -75,11 +75,26 @@ export function KhioraChatbot() {
       text: trimmed,
     };
 
-    // Build history excluding welcome & local notice banners
-    const historyPayload = messages
-      .filter((m) => m.id !== 'welcome' && !m.isNotice)
-      .slice(-8)
-      .map((m) => ({ role: m.role, text: m.text }));
+    // Build strictly alternating user/model history from completed turns only
+    const rawValidMessages = messages.filter(
+      (m) => m.id !== 'welcome' && !m.isNotice && m.text.trim().length > 0
+    );
+    const historyPayload: Array<{ role: 'user' | 'model'; text: string }> = [];
+    for (const msg of rawValidMessages) {
+      const role: 'user' | 'model' = msg.role === 'user' ? 'user' : 'model';
+      if (historyPayload.length === 0 && role !== 'user') continue;
+      const prev = historyPayload[historyPayload.length - 1];
+      if (prev && prev.role === role) continue;
+      historyPayload.push({ role, text: msg.text.trim() });
+    }
+    // Keep only complete user->model pairs so the next request cleanly appends a user turn
+    if (
+      historyPayload.length > 0 &&
+      historyPayload[historyPayload.length - 1].role === 'user'
+    ) {
+      historyPayload.pop();
+    }
+    const trimmedHistory = historyPayload.slice(-8);
 
     setMessages((prev) => [...prev, userMsg]);
     setInput('');
@@ -94,15 +109,15 @@ export function KhioraChatbot() {
         },
         body: JSON.stringify({
           message: trimmed,
-          history: historyPayload,
+          history: trimmedHistory,
         }),
       });
 
       const contentType = response.headers.get('content-type') || '';
       const isJson = contentType.includes('application/json');
 
-      // In Vite / AI Studio preview, /api/chat either 404s or returns HTML
-      if (response.status === 404 || response.status === 405 || !isJson) {
+      // In local Vite / AI Studio preview, /api/chat is not served as a Pages Function (returns HTML or non-JSON)
+      if (!isJson) {
         setMessages((prev) => [
           ...prev,
           {
@@ -118,17 +133,19 @@ export function KhioraChatbot() {
       const data = await response.json().catch(() => null);
 
       if (!response.ok || !data?.reply) {
-        const errorText =
+        const statusCode =
+          typeof data?.status === 'number' ? data.status : response.status;
+        const apiError =
           typeof data?.error === 'string' && data.error.trim()
-            ? data.error
-            : 'Sorry, I could not reach the assistant right now. Please try again shortly.';
+            ? data.error.trim()
+            : `Request failed with status ${statusCode}.`;
 
         setMessages((prev) => [
           ...prev,
           {
             id: `err-${Date.now()}`,
             role: 'model',
-            text: errorText,
+            text: `Error (${statusCode}): ${apiError}`,
             isNotice: true,
           },
         ]);
