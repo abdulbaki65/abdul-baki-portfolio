@@ -1,12 +1,8 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
-import {
-  RotateCcw,
-  Send,
-  Sparkles,
-  X,
-  Zap,
-} from 'lucide-react';
+import { RotateCcw, Send, Sparkles, X, Zap } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
+import { useLanguage } from '../context/LanguageContext';
+import { TRANSLATIONS } from '../data/translations';
 
 interface ChatMessage {
   id: string;
@@ -15,29 +11,32 @@ interface ChatMessage {
   isNotice?: boolean;
 }
 
-const WELCOME_MESSAGE: ChatMessage = {
-  id: 'welcome',
-  role: 'model',
-  text: "Hi! I'm KHIORA, Abdul Baki's AI assistant. Ask me anything about his Electrical Engineering skills, EIM LV-3 certification, or how to contact him!",
-};
-
-const QUICK_QUESTIONS: string[] = [
-  "What are Abdul Baki's skills?",
-  'Tell me about EIM LV-3 & House Wiring',
-  'How can I contact Abdul Baki?',
-];
-
-const PREVIEW_UNAVAILABLE_REPLY =
-  'KHIORA connects automatically to the live AI backend when deployed on Cloudflare Pages. In local or AI Studio preview, the /api/chat Pages Function is not active—once live on Cloudflare Pages with GEMINI_API_KEY set, I will answer in real time in both English and Bengali!';
-
 export function KhioraChatbot() {
+  const { lang, isBn } = useLanguage();
+  const t = TRANSLATIONS[lang].khiora;
+
   const [isOpen, setIsOpen] = useState(false);
-  const [messages, setMessages] = useState<ChatMessage[]>([WELCOME_MESSAGE]);
+  const [messages, setMessages] = useState<ChatMessage[]>([
+    {
+      id: 'welcome',
+      role: 'model',
+      text: t.welcome,
+    },
+  ]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
+
+  // Sync the welcome bubble text whenever the user switches EN <-> বাং
+  useEffect(() => {
+    setMessages((prev) =>
+      prev.map((msg) =>
+        msg.id === 'welcome' ? { ...msg, text: t.welcome } : msg
+      )
+    );
+  }, [t.welcome]);
 
   useEffect(() => {
     if (isOpen) {
@@ -87,7 +86,6 @@ export function KhioraChatbot() {
       if (prev && prev.role === role) continue;
       historyPayload.push({ role, text: msg.text.trim() });
     }
-    // Keep only complete user->model pairs so the next request cleanly appends a user turn
     if (
       historyPayload.length > 0 &&
       historyPayload[historyPayload.length - 1].role === 'user'
@@ -123,7 +121,7 @@ export function KhioraChatbot() {
           {
             id: `notice-${Date.now()}`,
             role: 'model',
-            text: PREVIEW_UNAVAILABLE_REPLY,
+            text: t.previewUnavailable,
             isNotice: true,
           },
         ]);
@@ -166,7 +164,7 @@ export function KhioraChatbot() {
         {
           id: `offline-${Date.now()}`,
           role: 'model',
-          text: PREVIEW_UNAVAILABLE_REPLY,
+          text: t.previewUnavailable,
           isNotice: true,
         },
       ]);
@@ -182,7 +180,7 @@ export function KhioraChatbot() {
 
   const handleReset = () => {
     if (isLoading) return;
-    setMessages([WELCOME_MESSAGE]);
+    setMessages([{ id: 'welcome', role: 'model', text: t.welcome }]);
     setInput('');
   };
 
@@ -212,12 +210,14 @@ export function KhioraChatbot() {
                     <h2 className="font-display truncate text-base font-bold tracking-tight text-slate-50">
                       KHIORA AI
                     </h2>
-                    <span className="text-[11px] font-semibold tracking-wider text-[#FFB300]">
-                      EE Assistant
+                    <span
+                      className={`${isBn ? 'font-bn' : ''} text-[11px] font-semibold tracking-wider text-[#FFB300] whitespace-nowrap`}
+                    >
+                      {t.roleBadge}
                     </span>
                   </div>
                   <p className="font-bn truncate text-xs text-slate-400">
-                    English & বাংলা • Abdul Baki Portfolio
+                    {t.headerSub}
                   </p>
                 </div>
               </div>
@@ -227,8 +227,8 @@ export function KhioraChatbot() {
                   type="button"
                   onClick={handleReset}
                   disabled={isLoading || messages.length === 1}
-                  title="Reset conversation"
-                  aria-label="Reset conversation"
+                  title={t.resetTitle}
+                  aria-label={t.resetTitle}
                   className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-700/70 bg-slate-900/70 text-slate-400 transition-colors hover:border-[#00E5FF]/45 hover:text-[#00E5FF] disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#00E5FF]"
                 >
                   <RotateCcw className="h-4 w-4" aria-hidden="true" />
@@ -236,7 +236,7 @@ export function KhioraChatbot() {
                 <button
                   type="button"
                   onClick={() => setIsOpen(false)}
-                  aria-label="Close KHIORA AI chat"
+                  aria-label={t.closeAria}
                   className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-700/70 bg-slate-900/70 text-slate-300 transition-colors hover:border-[#00E5FF]/50 hover:text-[#00E5FF] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#00E5FF]"
                 >
                   <X className="h-4 w-4" aria-hidden="true" />
@@ -280,7 +280,10 @@ export function KhioraChatbot() {
                     >
                       {!isUser && (
                         <div className="mb-1 flex items-center gap-1.5 text-[11px] font-semibold tracking-wide text-[#00E5FF]">
-                          <Sparkles className="h-3 w-3 text-[#FFB300]" aria-hidden="true" />
+                          <Sparkles
+                            className="h-3 w-3 text-[#FFB300]"
+                            aria-hidden="true"
+                          />
                           <span className="font-display">KHIORA</span>
                         </div>
                       )}
@@ -292,15 +295,22 @@ export function KhioraChatbot() {
 
               {/* Typing / Loading Indicator */}
               {isLoading && (
-                <div className="flex justify-start" role="status" aria-live="polite">
+                <div
+                  className="flex justify-start"
+                  role="status"
+                  aria-live="polite"
+                >
                   <div className="rounded-2xl rounded-bl-sm border border-[#00E5FF]/30 bg-[#0F172A]/90 px-4 py-3 text-xs text-slate-300">
                     <div className="flex items-center gap-2">
-                      <span className="inline-flex items-center gap-1" aria-hidden="true">
+                      <span
+                        className="inline-flex items-center gap-1"
+                        aria-hidden="true"
+                      >
                         <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-[#00E5FF] [animation-delay:-0.25s] motion-reduce:animate-none" />
                         <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-[#00E5FF] [animation-delay:-0.12s] motion-reduce:animate-none" />
                         <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-[#FFB300] motion-reduce:animate-none" />
                       </span>
-                      <span>KHIORA is thinking...</span>
+                      <span>{t.thinking}</span>
                     </div>
                   </div>
                 </div>
@@ -310,10 +320,10 @@ export function KhioraChatbot() {
               {showQuickQuestions && (
                 <div className="pt-1">
                   <p className="mb-2 text-[11px] font-medium text-slate-400">
-                    Quick questions
+                    {t.quickLabel}
                   </p>
                   <div className="flex flex-col gap-2">
-                    {QUICK_QUESTIONS.map((question) => (
+                    {t.quickQuestions.map((question) => (
                       <button
                         key={question}
                         type="button"
@@ -341,7 +351,7 @@ export function KhioraChatbot() {
             >
               <div className="flex items-center gap-2">
                 <label htmlFor="khiora-chat-input" className="sr-only">
-                  Ask KHIORA a question in English or Bengali
+                  {t.placeholder}
                 </label>
                 <input
                   ref={inputRef}
@@ -351,13 +361,13 @@ export function KhioraChatbot() {
                   onChange={(e) => setInput(e.target.value)}
                   disabled={isLoading}
                   maxLength={1500}
-                  placeholder="Ask in English or বাংলা..."
+                  placeholder={t.placeholder}
                   className="font-bn min-h-[44px] flex-1 rounded-xl border border-slate-700/80 bg-[#070B14]/90 px-3.5 py-2 text-sm text-slate-100 placeholder:text-slate-500 transition-colors focus:border-[#00E5FF] focus:outline-none focus:ring-2 focus:ring-[#00E5FF]/20 disabled:opacity-60"
                 />
                 <button
                   type="submit"
                   disabled={isLoading || !input.trim()}
-                  aria-label="Send message"
+                  aria-label={t.sendAria}
                   className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#00E5FF] text-[#070B14] transition-transform duration-150 hover:bg-cyan-300 active:scale-95 disabled:pointer-events-none disabled:opacity-45 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#00E5FF]"
                 >
                   <Send className="h-4 w-4" aria-hidden="true" />
@@ -373,7 +383,7 @@ export function KhioraChatbot() {
         type="button"
         onClick={() => setIsOpen((prev) => !prev)}
         aria-expanded={isOpen}
-        aria-label={isOpen ? 'Close KHIORA AI assistant' : 'Open KHIORA AI assistant'}
+        aria-label={isOpen ? t.closeAria : t.openAria}
         className="group relative inline-flex min-h-[48px] items-center gap-2.5 rounded-full border border-[#00E5FF]/55 bg-[#0F172A]/92 px-4 py-2.5 text-slate-50 shadow-[0_10px_32px_-8px_rgba(0,229,255,0.45)] backdrop-blur-md transition-all duration-200 hover:-translate-y-0.5 hover:border-[#00E5FF] hover:shadow-[0_14px_38px_-6px_rgba(0,229,255,0.6)] whitespace-nowrap focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#00E5FF]"
       >
         <span className="relative flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#00E5FF]/15 text-[#00E5FF]">

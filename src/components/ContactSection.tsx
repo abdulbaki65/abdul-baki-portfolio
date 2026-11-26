@@ -11,12 +11,14 @@ import {
   Share2,
 } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
+import { useLanguage } from '../context/LanguageContext';
 import {
   PHONE_DISPLAY,
   PHONE_HREF,
   SOCIAL_CHANNELS,
   type SocialChannel,
 } from '../data/portfolioData';
+import { TRANSLATIONS } from '../data/translations';
 
 const WEB3FORMS_ENDPOINT = 'https://api.web3forms.com/submit';
 const WEB3FORMS_ACCESS_KEY = '4956672a-470e-4546-8ce4-7f4afe3dcecc';
@@ -48,6 +50,9 @@ function SocialIcon({ type }: { type: SocialChannel['type'] }) {
 }
 
 export function ContactSection() {
+  const { lang, isBn } = useLanguage();
+  const t = TRANSLATIONS[lang].contact;
+
   const [form, setForm] = useState<FormState>({
     name: '',
     email: '',
@@ -71,21 +76,21 @@ export function ContactSection() {
   const validate = (values: FormState): FormErrors => {
     const nextErrors: FormErrors = {};
     if (!values.name.trim()) {
-      nextErrors.name = 'Please enter your name.';
+      nextErrors.name = t.validation.nameRequired;
     } else if (values.name.trim().length < 2) {
-      nextErrors.name = 'Name must be at least 2 characters.';
+      nextErrors.name = t.validation.nameShort;
     }
 
     if (!values.email.trim()) {
-      nextErrors.email = 'Please enter your email address.';
+      nextErrors.email = t.validation.emailRequired;
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(values.email.trim())) {
-      nextErrors.email = 'Please enter a valid email address.';
+      nextErrors.email = t.validation.emailInvalid;
     }
 
     if (!values.message.trim()) {
-      nextErrors.message = 'Please write a short message.';
+      nextErrors.message = t.validation.messageRequired;
     } else if (values.message.trim().length < 10) {
-      nextErrors.message = 'Message should be at least 10 characters.';
+      nextErrors.message = t.validation.messageShort;
     }
 
     return nextErrors;
@@ -131,9 +136,7 @@ export function ContactSection() {
       const data = await response.json().catch(() => null);
 
       if (!response.ok || !data?.success) {
-        throw new Error(
-          data?.message || 'Unable to send your message right now. Please try again.'
-        );
+        throw new Error(data?.message || t.errorFallback);
       }
 
       setSubmittedName(senderName);
@@ -150,7 +153,7 @@ export function ContactSection() {
       const message =
         error instanceof Error && error.message
           ? error.message
-          : 'Network error while sending message. Please try again or call directly.';
+          : t.errorNetwork;
       setSubmitError(message);
     } finally {
       setIsSubmitting(false);
@@ -170,7 +173,7 @@ export function ContactSection() {
   return (
     <section
       id="contact"
-      className="relative mx-auto max-w-6xl px-5 py-16 sm:px-8 sm:py-22"
+      className={`relative mx-auto max-w-6xl px-5 py-16 sm:px-8 sm:py-22 ${isBn ? 'font-bn' : ''}`}
     >
       <motion.div
         initial={{ opacity: 0, y: 16 }}
@@ -180,29 +183,28 @@ export function ContactSection() {
       >
         <div className="max-w-2xl">
           <p className="text-xs font-semibold tracking-wider text-[#00E5FF]">
-            Get In Touch
+            {t.kicker}
           </p>
           <h2
-            className="mt-2 font-display text-3xl font-bold tracking-tight text-slate-50 sm:text-4xl"
+            className={`${isBn ? 'font-bn leading-snug' : 'font-display'} mt-2 text-3xl font-bold tracking-tight text-slate-50 sm:text-4xl`}
             style={{ textWrap: 'balance' }}
           >
-            Contact Abdul Baki
+            {t.heading}
           </h2>
           <p className="mt-3 text-sm leading-relaxed text-slate-400 sm:text-base">
-            Have a question about electrical installation, house wiring, or a
-            project collaboration? Reach out directly or send a message below.
+            {t.subtitle}
           </p>
         </div>
 
         <div className="mt-10 grid grid-cols-1 items-stretch gap-8 lg:grid-cols-12">
           {/* Left Column: Connect Directly */}
           <div className="glass-card flex flex-col rounded-2xl p-6 sm:p-8 lg:col-span-5">
-            <h3 className="font-display text-xl font-bold text-slate-50">
-              Connect Directly
+            <h3
+              className={`${isBn ? 'font-bn' : 'font-display'} text-xl font-bold text-slate-50`}
+            >
+              {t.connectTitle}
             </h3>
-            <p className="mt-1.5 text-sm text-slate-400">
-              Tap to call directly or connect via social messaging platforms.
-            </p>
+            <p className="mt-1.5 text-sm text-slate-400">{t.connectSubtitle}</p>
 
             {/* Primary Call Now Card */}
             <a
@@ -215,7 +217,7 @@ export function ContactSection() {
                 </div>
                 <div className="min-w-0">
                   <span className="block text-xs font-semibold text-[#00E5FF]">
-                    Call Now
+                    {t.callNow}
                   </span>
                   <span className="font-display block text-lg font-bold tracking-wide text-slate-50 tabular-nums">
                     {PHONE_DISPLAY}
@@ -223,7 +225,7 @@ export function ContactSection() {
                 </div>
               </div>
               <span className="rounded-lg bg-[#00E5FF] px-3 py-1.5 text-xs font-bold text-[#070B14] whitespace-nowrap shrink-0">
-                Dial
+                {t.dial}
               </span>
             </a>
 
@@ -242,10 +244,10 @@ export function ContactSection() {
                       <SocialIcon type={channel.type} />
                     </div>
                     <div className="min-w-0">
-                      <span className="block text-sm font-semibold text-slate-100">
+                      <span className="font-sans block text-sm font-semibold text-slate-100">
                         {channel.platform}
                       </span>
-                      <span className="block truncate text-xs text-slate-400">
+                      <span className="font-sans block truncate text-xs text-slate-400">
                         {channel.displayPrimary}
                         {channel.displaySecondary &&
                           channel.id === 'whatsapp' && (
@@ -269,12 +271,12 @@ export function ContactSection() {
 
           {/* Right Column: Send a Message Form */}
           <div className="glass-card flex flex-col rounded-2xl p-6 sm:p-8 lg:col-span-7">
-            <h3 className="font-display text-xl font-bold text-slate-50">
-              Send a Message
+            <h3
+              className={`${isBn ? 'font-bn' : 'font-display'} text-xl font-bold text-slate-50`}
+            >
+              {t.formTitle}
             </h3>
-            <p className="mt-1.5 text-sm text-slate-400">
-              Fill out the form and I will get back to you as soon as possible.
-            </p>
+            <p className="mt-1.5 text-sm text-slate-400">{t.formSubtitle}</p>
 
             <form
               onSubmit={handleSubmit}
@@ -287,7 +289,7 @@ export function ContactSection() {
                     htmlFor="contact-name"
                     className="block text-sm font-medium text-slate-200"
                   >
-                    Your Name
+                    {t.labelName}
                   </label>
                   <input
                     id="contact-name"
@@ -297,7 +299,7 @@ export function ContactSection() {
                     disabled={isSubmitting}
                     value={form.name}
                     onChange={(e) => handleFieldChange('name', e.target.value)}
-                    placeholder="e.g. Tariqul Islam"
+                    placeholder={t.placeholderName}
                     aria-invalid={Boolean(errors.name)}
                     aria-describedby={errors.name ? 'name-error' : undefined}
                     className={`mt-2 block min-h-[46px] w-full rounded-xl border bg-[#070B14]/80 px-4 py-2.5 text-sm text-slate-100 placeholder:text-slate-500 transition-colors focus:outline-none focus:ring-2 disabled:cursor-not-allowed disabled:opacity-60 ${
@@ -322,7 +324,7 @@ export function ContactSection() {
                     htmlFor="contact-email"
                     className="block text-sm font-medium text-slate-200"
                   >
-                    Email Address
+                    {t.labelEmail}
                   </label>
                   <input
                     id="contact-email"
@@ -332,7 +334,7 @@ export function ContactSection() {
                     disabled={isSubmitting}
                     value={form.email}
                     onChange={(e) => handleFieldChange('email', e.target.value)}
-                    placeholder="you@example.com"
+                    placeholder={t.placeholderEmail}
                     aria-invalid={Boolean(errors.email)}
                     aria-describedby={errors.email ? 'email-error' : undefined}
                     className={`mt-2 block min-h-[46px] w-full rounded-xl border bg-[#070B14]/80 px-4 py-2.5 text-sm text-slate-100 placeholder:text-slate-500 transition-colors focus:outline-none focus:ring-2 disabled:cursor-not-allowed disabled:opacity-60 ${
@@ -358,7 +360,7 @@ export function ContactSection() {
                   htmlFor="contact-message"
                   className="block text-sm font-medium text-slate-200"
                 >
-                  Message
+                  {t.labelMessage}
                 </label>
                 <textarea
                   id="contact-message"
@@ -367,7 +369,7 @@ export function ContactSection() {
                   disabled={isSubmitting}
                   value={form.message}
                   onChange={(e) => handleFieldChange('message', e.target.value)}
-                  placeholder="Write your message, project details, or inquiry here..."
+                  placeholder={t.placeholderMessage}
                   aria-invalid={Boolean(errors.message)}
                   aria-describedby={
                     errors.message ? 'message-error' : undefined
@@ -412,9 +414,8 @@ export function ContactSection() {
                     aria-hidden="true"
                   />
                   <span>
-                    Thank you, <strong>{submittedName}</strong>! Your message
-                    has been sent to Abdul Baki&apos;s email. For an urgent
-                    response, feel free to call{' '}
+                    {t.successPrefix} <strong>{submittedName}</strong>
+                    {t.successSuffix}{' '}
                     <a
                       href={PHONE_HREF}
                       className="font-semibold text-[#00E5FF] underline underline-offset-2"
@@ -431,7 +432,7 @@ export function ContactSection() {
                   type="submit"
                   disabled={isSubmitting}
                   aria-busy={isSubmitting}
-                  className="inline-flex min-h-[46px] w-full items-center justify-center gap-2 rounded-xl bg-[#00E5FF] px-6 py-3 text-sm font-semibold text-[#070B14] shadow-[0_8px_24px_-6px_rgba(0,229,255,0.4)] transition-transform duration-150 hover:-translate-y-0.5 hover:bg-cyan-300 disabled:pointer-events-none disabled:opacity-75 sm:w-auto focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#00E5FF]"
+                  className="inline-flex min-h-[46px] w-full items-center justify-center gap-2 rounded-xl bg-[#00E5FF] px-6 py-3 text-sm font-semibold text-[#070B14] shadow-[0_8px_24px_-6px_rgba(0,229,255,0.4)] transition-transform duration-150 hover:-translate-y-0.5 hover:bg-cyan-300 disabled:pointer-events-none disabled:opacity-75 whitespace-nowrap sm:w-auto focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#00E5FF]"
                 >
                   {isSubmitting ? (
                     <>
@@ -439,12 +440,12 @@ export function ContactSection() {
                         className="h-4 w-4 animate-spin"
                         aria-hidden="true"
                       />
-                      <span>Sending...</span>
+                      <span>{t.sendingButton}</span>
                     </>
                   ) : (
                     <>
                       <Send className="h-4 w-4" aria-hidden="true" />
-                      <span>Send Message</span>
+                      <span>{t.sendButton}</span>
                     </>
                   )}
                 </button>
@@ -464,7 +465,7 @@ export function ContactSection() {
             transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
             role="status"
             aria-live="polite"
-            className="fixed bottom-20 right-4 z-50 flex max-w-sm items-start gap-3 rounded-xl border border-[#00E5FF]/40 bg-[#0F172A]/95 p-4 text-slate-100 shadow-[0_18px_48px_-12px_rgba(0,0,0,0.8)] backdrop-blur-lg sm:bottom-22 sm:right-6"
+            className={`${isBn ? 'font-bn' : ''} fixed bottom-20 right-4 z-50 flex max-w-sm items-start gap-3 rounded-xl border border-[#00E5FF]/40 bg-[#0F172A]/95 p-4 text-slate-100 shadow-[0_18px_48px_-12px_rgba(0,0,0,0.8)] backdrop-blur-lg sm:bottom-22 sm:right-6`}
           >
             <CheckCircle2
               className="mt-0.5 h-5 w-5 shrink-0 text-[#00E5FF]"
@@ -472,17 +473,17 @@ export function ContactSection() {
             />
             <div className="min-w-0 flex-1">
               <p className="text-sm font-semibold text-slate-50">
-                Message Sent Successfully
+                {t.toastTitle}
               </p>
               <p className="mt-0.5 text-xs leading-relaxed text-slate-300">
-                Thanks {submittedName}, Abdul Baki will respond to your inquiry
-                shortly.
+                {t.toastBodyPrefix} {submittedName}
+                {t.toastBodySuffix}
               </p>
             </div>
             <button
               type="button"
               onClick={() => setShowToast(false)}
-              aria-label="Dismiss notification"
+              aria-label={t.dismiss}
               className="rounded-md px-1.5 py-0.5 text-xs text-slate-400 hover:text-slate-100"
             >
               ✕

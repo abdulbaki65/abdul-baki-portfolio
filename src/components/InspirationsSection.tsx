@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
 import { BookOpen, ChevronRight, X } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
+import { useLanguage } from '../context/LanguageContext';
 import { INSPIRATIONS, type InspirationItem } from '../data/portfolioData';
+import { TRANSLATIONS } from '../data/translations';
 
 function IslamicMotifHeader({ motif }: { motif: InspirationItem['motif'] }) {
   return (
@@ -175,6 +177,8 @@ function IslamicMotifHeader({ motif }: { motif: InspirationItem['motif'] }) {
 }
 
 export function InspirationsSection() {
+  const { lang, isBn } = useLanguage();
+  const t = TRANSLATIONS[lang].inspirations;
   const [selectedItem, setSelectedItem] = useState<InspirationItem | null>(null);
 
   useEffect(() => {
@@ -207,21 +211,26 @@ export function InspirationsSection() {
         viewport={{ once: true, amount: 0.15 }}
         transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
       >
-        <div className="max-w-3xl">
+        <div className={`max-w-3xl ${isBn ? 'font-bn' : ''}`}>
           <p className="text-xs font-semibold tracking-wider text-[#FFB300]">
-            Knowledge & Reflection
+            {t.kicker}
           </p>
           <h2
-            className="mt-2 font-display text-3xl font-bold tracking-tight text-slate-50 sm:text-4xl"
+            className={`${isBn ? 'font-bn leading-snug' : 'font-display'} mt-2 text-3xl font-bold tracking-tight text-slate-50 sm:text-4xl`}
             style={{ textWrap: 'balance' }}
           >
-            Inspirations & History{' '}
-            <span className="font-bn font-bold text-[#FFB300]">
-              (অনুপ্রেরণা ও ইতিহাস)
-            </span>
+            {t.headingMain}
+            {t.headingAccent && (
+              <>
+                {' '}
+                <span className="font-bn font-bold text-[#FFB300]">
+                  {t.headingAccent}
+                </span>
+              </>
+            )}
           </h2>
           <p className="font-bn mt-3 text-base leading-relaxed text-slate-300 sm:text-lg">
-            ইতিহাস, আদর্শ ও শিক্ষণীয় ঘটনাবলি
+            {t.subtitle}
           </p>
         </div>
 

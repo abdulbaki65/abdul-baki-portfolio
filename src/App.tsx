@@ -9,6 +9,7 @@ import { KhioraChatbot } from './components/KhioraChatbot';
 import { Navbar } from './components/Navbar';
 import { SectionDivider } from './components/SectionDivider';
 import { SkillsSection } from './components/SkillsSection';
+import { LanguageProvider } from './context/LanguageContext';
 import { NAV_ITEMS } from './data/portfolioData';
 
 export default function App() {
@@ -43,28 +44,30 @@ export default function App() {
   }, []);
 
   return (
-    <div className="relative min-h-screen bg-[#070B14] text-slate-100">
-      <CircuitBackground />
+    <LanguageProvider>
+      <div className="relative min-h-screen bg-[#070B14] text-slate-100">
+        <CircuitBackground />
 
-      <div className="relative z-10 flex min-h-screen flex-col">
-        <Navbar activeSection={activeSection} />
+        <div className="relative z-10 flex min-h-screen flex-col">
+          <Navbar activeSection={activeSection} />
 
-        <main className="flex-1">
-          <Hero />
-          <SectionDivider variant="sine" accent="cyan" />
-          <AboutSection />
-          <SectionDivider variant="circuit" accent="cyan" />
-          <SkillsSection />
-          <SectionDivider variant="sine" accent="amber" />
-          <InspirationsSection />
-          <SectionDivider variant="circuit" accent="cyan" />
-          <ContactSection />
-        </main>
+          <main className="flex-1">
+            <Hero />
+            <SectionDivider variant="sine" accent="cyan" />
+            <AboutSection />
+            <SectionDivider variant="circuit" accent="cyan" />
+            <SkillsSection />
+            <SectionDivider variant="sine" accent="amber" />
+            <InspirationsSection />
+            <SectionDivider variant="circuit" accent="cyan" />
+            <ContactSection />
+          </main>
 
-        <Footer />
+          <Footer />
+        </div>
+
+        <KhioraChatbot />
       </div>
-
-      <KhioraChatbot />
-    </div>
+    </LanguageProvider>
   );
 }

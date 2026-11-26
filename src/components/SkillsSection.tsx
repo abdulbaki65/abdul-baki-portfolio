@@ -7,7 +7,9 @@ import {
   Zap,
 } from 'lucide-react';
 import { motion } from 'motion/react';
+import { useLanguage } from '../context/LanguageContext';
 import { SKILLS, type SkillItem } from '../data/portfolioData';
+import { TRANSLATIONS } from '../data/translations';
 
 function SkillIcon({
   name,
@@ -36,10 +38,13 @@ function SkillIcon({
 }
 
 export function SkillsSection() {
+  const { lang, isBn } = useLanguage();
+  const t = TRANSLATIONS[lang].skills;
+
   return (
     <section
       id="skills"
-      className="relative mx-auto max-w-6xl px-5 py-16 sm:px-8 sm:py-22"
+      className={`relative mx-auto max-w-6xl px-5 py-16 sm:px-8 sm:py-22 ${isBn ? 'font-bn' : ''}`}
     >
       <motion.div
         initial={{ opacity: 0, y: 16 }}
@@ -49,17 +54,16 @@ export function SkillsSection() {
       >
         <div className="max-w-2xl">
           <p className="text-xs font-semibold tracking-wider text-[#00E5FF]">
-            Core Capabilities
+            {t.kicker}
           </p>
           <h2
-            className="mt-2 font-display text-3xl font-bold tracking-tight text-slate-50 sm:text-4xl"
+            className={`${isBn ? 'font-bn leading-snug' : 'font-display'} mt-2 text-3xl font-bold tracking-tight text-slate-50 sm:text-4xl`}
             style={{ textWrap: 'balance' }}
           >
-            Technical Skills & Certification
+            {t.heading}
           </h2>
           <p className="mt-3 text-sm leading-relaxed text-slate-400 sm:text-base">
-            Practical electrical engineering competencies grounded in certified safety
-            standards, hands-on wiring, and modern web fundamentals.
+            {t.subtitle}
           </p>
         </div>
 
@@ -67,6 +71,14 @@ export function SkillsSection() {
         <div className="mt-10 grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
           {SKILLS.map((skill) => {
             const isFeatured = Boolean(skill.featured);
+            const localized = t.items[skill.id] ?? {
+              title: skill.title,
+              bnTitle: skill.bnTitle,
+              subtitle: skill.subtitle,
+              description: skill.description,
+              badge: skill.badge,
+            };
+
             return (
               <article
                 key={skill.id}
@@ -87,31 +99,35 @@ export function SkillsSection() {
                     <SkillIcon name={skill.iconName} featured={isFeatured} />
                   </div>
 
-                  {skill.badge && (
+                  {localized.badge && (
                     <span className="inline-flex shrink-0 items-center gap-1.5 rounded-md border border-[#FFB300]/45 bg-[#FFB300]/15 px-2.5 py-1 text-[11px] font-bold tracking-wider text-[#FFB300] whitespace-nowrap">
-                      {skill.badge}
+                      {localized.badge}
                     </span>
                   )}
                 </div>
 
                 <div className="mt-5">
-                  <h3 className="font-display text-lg font-bold leading-snug text-slate-50">
-                    {skill.title}
-                    {skill.bnTitle && (
-                      <span className="font-bn ml-1.5 font-semibold text-[#00E5FF]/95">
-                        ({skill.bnTitle})
+                  <h3
+                    className={`${isBn ? 'font-bn' : 'font-display'} text-lg font-bold leading-snug text-slate-50`}
+                  >
+                    {localized.title}
+                    {localized.bnTitle && (
+                      <span
+                        className={`${isBn ? 'font-display text-sm' : 'font-bn'} ml-1.5 font-semibold text-[#00E5FF]/95`}
+                      >
+                        ({localized.bnTitle})
                       </span>
                     )}
                   </h3>
-                  {skill.subtitle && (
+                  {localized.subtitle && (
                     <p className="mt-1 text-xs font-medium text-[#FFB300]/90">
-                      {skill.subtitle}
+                      {localized.subtitle}
                     </p>
                   )}
                 </div>
 
                 <p className="mt-3 flex-1 text-sm leading-relaxed text-slate-300">
-                  {skill.description}
+                  {localized.description}
                 </p>
               </article>
             );
