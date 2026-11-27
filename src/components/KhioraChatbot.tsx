@@ -77,6 +77,49 @@ function getSpeechRecognitionCtor(): SpeechRecognitionConstructor | null {
   return win.SpeechRecognition || win.webkitSpeechRecognition || null;
 }
 
+/**
+ * Safely render basic **bold** emphasis and clean line breaks without raw HTML.
+ */
+function renderFormattedText(text: string, isUser: boolean) {
+  const lines = text.split(/\r?\n/);
+
+  return lines.map((rawLine, lineIdx) => {
+    // Convert leading markdown bullet "* " or "- " into a clean bullet character
+    const line = rawLine.replace(/^\s*[-*]\s+/, '• ');
+    const segments = line.split(/(\*\*[^*]+\*\*)/g);
+
+    return (
+      <span key={lineIdx} className="block">
+        {line.length === 0 ? (
+          <span className="block h-2" aria-hidden="true" />
+        ) : (
+          segments.map((segment, segIdx) => {
+            if (
+              segment.startsWith('**') &&
+              segment.endsWith('**') &&
+              segment.length > 4
+            ) {
+              return (
+                <strong
+                  key={segIdx}
+                  className={
+                    isUser
+                      ? 'font-bold text-[#070B14]'
+                      : 'font-semibold text-white'
+                  }
+                >
+                  {segment.slice(2, -2)}
+                </strong>
+              );
+            }
+            return <span key={segIdx}>{segment}</span>;
+          })
+        )}
+      </span>
+    );
+  });
+}
+
 export function KhioraChatbot() {
   const { lang, isBn } = useLanguage();
   const t = TRANSLATIONS[lang].khiora;
@@ -511,7 +554,9 @@ export function KhioraChatbot() {
                           <span className="font-display">KHIORA</span>
                         </div>
                       )}
-                      {msg.text}
+                      <div className="space-y-0.5">
+                        {renderFormattedText(msg.text, isUser)}
+                      </div>
                     </div>
                   </div>
                 );

@@ -2,49 +2,36 @@ const GEMINI_API_BASE =
   'https://generativelanguage.googleapis.com/v1beta/models';
 
 const MODEL_FALLBACK_LIST = [
-  'gemini-3.8-flash',
-  'gemini-3.6-flash',
   'gemini-3.5-flash-lite',
+  'gemini-3.6-flash',
+  'gemini-3.8-flash',
 ];
 
-const GENERATION_CONFIG = {
-  maxOutputTokens: 1024,
+const BASE_GENERATION_CONFIG = {
+  maxOutputTokens: 1500,
   temperature: 0.7,
 };
 
-const SYSTEM_INSTRUCTION = `You are KHIORA, an intelligent, helpful, and polite AI assistant on Abdul Baki's Electrical Engineering portfolio website.
+const FAST_GENERATION_CONFIG = {
+  ...BASE_GENERATION_CONFIG,
+  thinkingConfig: {
+    thinkingBudget: 0,
+  },
+};
 
-You excel at answering BOTH:
-1. Questions about Abdul Baki, his background, skills, certifications, tools, and how to contact him.
-2. Difficult, technical, or general questions from visitors—including Electrical Engineering theory (Ohm's Law, Kirchhoff's Laws, AC/DC power, transformers, motors, power factor), circuit troubleshooting, residential house wiring & electrical safety, science, math, coding, technology, history, or general knowledge.
+const SYSTEM_INSTRUCTION = `You are KHIORA, the smart, friendly AI assistant on Abdul Baki's Electrical Engineering portfolio website.
 
-Key facts about Abdul Baki (use accurately whenever asked about him):
-- Role: Electrical Engineering student at Bogura Government Polytechnic Institute (বগুড়া সরকারি পলিটেকনিক ইনস্টিটিউট), Bogura, Bangladesh. Never mention or invent any semester number.
-- Certification: EIM LV-3 Certified (Electrical Installation & Maintenance Level-3 — practical electrical systems, safety standards, inspection, and maintenance).
-- Core Skills:
-  1. EIM LV-3 (Certified Electrical Installation & Maintenance Level-3)
-  2. House Wiring (হাউজ ওয়্যারিং) — residential electrical wiring, load distribution, earthing, switchboard setup, circuit protection, and fault finding
-  3. Electrical Fundamentals — circuit analysis, AC/DC power distribution, switchgear concepts, and core electrical engineering principles
-  4. Problem Solving & Troubleshooting — systematic diagnostics, multimeter testing, and practical technical solutions
-  5. Web Development Basics — clean HTML, CSS, and building modern responsive web interfaces
-  6. Continuous Learning — exploring modern engineering tools, smart automation, and AI
-- Portfolio Tools: Interactive EE Tools (House Load & Wire Estimator and Electricity Bill kWh Estimator) and a Digital Visiting Card with QR code & .vcf download.
-- Direct Contact Details:
-  - Phone / Call Now: 01575586681 (+8801575586681)
-  - WhatsApp: 01575586681 (@bakia8542, https://wa.me/8801575586681)
-  - Telegram: @Abdul23104 (https://t.me/Abdul23104)
-  - Instagram: @abdul_baki_6.5 (https://www.instagram.com/abdul_baki_6.5)
-  - Facebook: Abdulbaki231 (https://www.facebook.com/Abdulbaki231)
-  - Website: https://abdulbaki-e1m.pages.dev
+Portfolio facts about Abdul Baki:
+- Electrical Engineering student at Bogura Government Polytechnic Institute (বগুড়া সরকারি পলিটেকনিক ইনস্টিটিউট), Bogura, Bangladesh. Never mention or invent any semester number.
+- EIM LV-3 Certified (Electrical Installation & Maintenance Level-3).
+- Skills: EIM LV-3, House Wiring (হাউজ ওয়্যারিং), Electrical Fundamentals, Problem Solving & Troubleshooting, Web Development Basics, Continuous Learning.
+- Site tools: EE Tools (House Load & Wire Estimator, Electricity Bill kWh Estimator) and Digital Visiting Card with QR & .vcf download.
+- Contact: Call/WhatsApp 01575586681 (+8801575586681, @bakia8542), Telegram @Abdul23104, Instagram @abdul_baki_6.5, Facebook Abdulbaki231, Website https://abdulbaki-e1m.pages.dev.
 
-Answering & Reasoning Guidelines:
-- Language Detection (Automatic per message, regardless of the website UI language):
-  - If the user writes in pure Bengali -> reply in natural, polite Bengali.
-  - If the user writes in pure English -> reply in natural, clear English.
-  - If the user writes in mixed Bengali-English or Banglish (Bengali written in English letters, e.g., "tumi ke", "house wiring kibhabe kore", "Abdul Baki er skills ki") -> reply clearly in natural Bengali (using standard English technical terms such as MCB, Voltage, Phase, EIM LV-3, or Ohm's Law where helpful).
-- For simple questions (like contact info or quick facts), keep answers crisp and concise.
-- For difficult or complex questions (Electrical Engineering theory, circuit troubleshooting, wiring calculations, science, tech, or general concepts), break the explanation down clearly step-by-step using simple language, numbered steps or short bullet points, key formulas where helpful, and practical real-world examples so anyone can understand easily.
-- For electrical work or live house wiring troubleshooting, always include a brief safety reminder (such as switching off the main MCB/breaker, checking earthing, and consulting a certified technician for live mains work).`;
+Rules:
+- Auto-detect each message's language regardless of UI language: pure Bengali -> natural Bengali; pure English -> clear English; mixed Bengali-English or Banglish -> clear natural Bengali (keeping standard English technical terms like MCB, Voltage, Phase, EIM LV-3 where helpful).
+- Answer BOTH portfolio questions about Abdul Baki AND any general, technical, Electrical Engineering, house wiring, science, or study questions accurately and clearly.
+- Keep simple answers concise; break complex/difficult questions into clear step-by-step points with practical examples. Include a brief safety tip for live electrical work.`;
 
 const MAX_MESSAGE_LENGTH = 1500;
 const MAX_HISTORY_ITEMS = 10;
@@ -83,6 +70,63 @@ function normalizeRole(role) {
 function sanitizeErrorText(text, apiKey) {
   if (!apiKey) return text;
   return text.split(apiKey).join('[REDACTED]');
+}
+
+/**
+ * Safely extract non-thought text from Gemini generateContent response.
+ * Ignores hidden thinking parts where `part.thought === true`.
+ * @param {any} geminiData
+ * @returns {string}
+ */
+function extractReplyText(geminiData) {
+  const parts = geminiData?.candidates?.[0]?.content?.parts;
+  if (!Array.isArray(parts)) return '';
+
+  return parts
+    .filter(
+      (part) =>
+        part &&
+        part.thought !== true &&
+        typeof part.text === 'string' &&
+        part.text.length > 0
+    )
+    .map((part) => part.text)
+    .join('')
+    .trim();
+}
+
+/**
+ * Call a specific Gemini model once with a given generationConfig.
+ * @param {string} model
+ * @param {string} encodedKey
+ * @param {Array<{ role: "user" | "model", parts: Array<{ text: string }> }>} contents
+ * @param {Record<string, unknown>} generationConfig
+ */
+async function callGeminiModel(model, encodedKey, contents, generationConfig) {
+  const endpointUrl = `${GEMINI_API_BASE}/${model}:generateContent?key=${encodedKey}`;
+  const response = await fetch(endpointUrl, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      systemInstruction: {
+        parts: [{ text: SYSTEM_INSTRUCTION }],
+      },
+      contents,
+      generationConfig,
+    }),
+  });
+
+  const rawText = await response.text();
+  let data = null;
+  try {
+    data = rawText ? JSON.parse(rawText) : null;
+  } catch {
+    data = null;
+  }
+
+  return { response, data, rawText };
 }
 
 /**
@@ -163,7 +207,6 @@ export async function onRequestPost(context) {
       }
     }
 
-    // Ensure the final turn is the current "user" message without consecutive user turns
     const lastEntry = contents[contents.length - 1];
     if (lastEntry && lastEntry.role === 'user') {
       lastEntry.parts[0].text = `${lastEntry.parts[0].text}\n${rawMessage}`;
@@ -174,86 +217,92 @@ export async function onRequestPost(context) {
       });
     }
 
-    const requestPayload = JSON.stringify({
-      systemInstruction: {
-        parts: [{ text: SYSTEM_INSTRUCTION }],
-      },
-      contents,
-      generationConfig: GENERATION_CONFIG,
-    });
-
     const encodedKey = encodeURIComponent(apiKey);
     let lastStatus = 502;
-    let lastError = 'Unable to reach Gemini API.';
+    let lastError = 'Unable to generate a response right now. Please try again.';
 
     for (let i = 0; i < MODEL_FALLBACK_LIST.length; i++) {
       const model = MODEL_FALLBACK_LIST[i];
       const hasNextModel = i < MODEL_FALLBACK_LIST.length - 1;
-      const endpointUrl = `${GEMINI_API_BASE}/${model}:generateContent?key=${encodedKey}`;
 
-      const geminiResponse = await fetch(endpointUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: requestPayload,
-      });
+      // First try with thinkingBudget: 0 for fast 1–2s replies
+      let attempt = await callGeminiModel(
+        model,
+        encodedKey,
+        contents,
+        FAST_GENERATION_CONFIG
+      );
 
-      const rawResponseText = await geminiResponse.text();
-      let geminiData = null;
-      try {
-        geminiData = rawResponseText ? JSON.parse(rawResponseText) : null;
-      } catch {
-        geminiData = null;
+      // If this model rejects thinkingConfig (HTTP 400), immediately retry the same model without thinkingConfig
+      if (!attempt.response.ok && attempt.response.status === 400) {
+        const errLower = String(
+          attempt.data?.error?.message || attempt.rawText || ''
+        ).toLowerCase();
+        if (errLower.includes('thinking')) {
+          console.warn(
+            `[KHIORA /api/chat] Model "${model}" rejected thinkingConfig, retrying without thinkingConfig.`
+          );
+          attempt = await callGeminiModel(
+            model,
+            encodedKey,
+            contents,
+            BASE_GENERATION_CONFIG
+          );
+        }
       }
 
-      if (!geminiResponse.ok) {
+      if (!attempt.response.ok) {
         const upstreamError =
-          geminiData?.error?.message ||
-          geminiData?.message ||
-          rawResponseText ||
-          geminiResponse.statusText ||
+          attempt.data?.error?.message ||
+          attempt.data?.message ||
+          attempt.rawText ||
+          attempt.response.statusText ||
           'Unknown Gemini API error';
 
         const safeError = sanitizeErrorText(String(upstreamError), apiKey);
-        lastStatus = geminiResponse.status;
+        lastStatus = attempt.response.status;
         lastError = safeError;
 
         console.error(
-          `[KHIORA /api/chat] Model "${model}" failed (${geminiResponse.status}):`,
+          `[KHIORA /api/chat] Model "${model}" failed (${attempt.response.status}):`,
           safeError
         );
 
-        // Automatically fall back to the next model immediately on HTTP 503 or 429
-        if (
-          (geminiResponse.status === 503 || geminiResponse.status === 429) &&
-          hasNextModel
-        ) {
+        // Stop immediately on auth/key errors; otherwise fall back to next model
+        const isAuthError =
+          attempt.response.status === 401 || attempt.response.status === 403;
+        if (!isAuthError && hasNextModel) {
           continue;
         }
 
         return jsonResponse(
           {
-            status: geminiResponse.status,
+            status: attempt.response.status,
             error: safeError,
           },
-          geminiResponse.status
+          attempt.response.status
         );
       }
 
-      const parts = geminiData?.candidates?.[0]?.content?.parts;
-      const replyText = Array.isArray(parts)
-        ? parts
-            .map((part) => (typeof part?.text === 'string' ? part.text : ''))
-            .join('')
-            .trim()
-        : '';
+      // Safely extract non-thought text from candidates[0].content.parts
+      const replyText = extractReplyText(attempt.data);
 
       if (!replyText) {
-        const emptyErr = geminiData?.promptFeedback?.blockReason
-          ? `Response blocked by safety filter (${geminiData.promptFeedback.blockReason}).`
-          : `Model "${model}" returned an empty response.`;
-        console.error('[KHIORA /api/chat] Empty response:', emptyErr);
+        const finishReason = attempt.data?.candidates?.[0]?.finishReason;
+        const blockReason = attempt.data?.promptFeedback?.blockReason;
+        const emptyErr = blockReason
+          ? `Response blocked by safety filter (${blockReason}).`
+          : `Model "${model}" returned HTTP 200 with no text${finishReason ? ` (finishReason: ${finishReason})` : ''}.`;
+
+        console.error('[KHIORA /api/chat] Empty 200 reply:', emptyErr);
+        lastStatus = 502;
+        lastError = emptyErr;
+
+        // Fall back to the next model instead of returning an empty 200 reply
+        if (hasNextModel) {
+          continue;
+        }
+
         return jsonResponse({ status: 502, error: emptyErr }, 502);
       }
 
