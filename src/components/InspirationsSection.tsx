@@ -350,6 +350,29 @@ export function InspirationsSection() {
                   ))}
                 </div>
 
+                {/* Dedicated Sub-Section (e.g., Farewell Sermon) */}
+                {selectedItem.specialSection && (
+                  <div className="mt-6 rounded-xl border border-[#FFB300]/30 bg-[#FFB300]/[0.06] p-5">
+                    <h4 className="text-base font-bold leading-snug text-[#FFB300] sm:text-lg">
+                      {selectedItem.specialSection.title}
+                    </h4>
+                    <p className="mt-2.5 text-[15px] leading-[1.8] text-slate-200">
+                      {selectedItem.specialSection.intro}
+                    </p>
+                    <ul className="mt-3.5 space-y-2.5 text-[15px] leading-[1.75] text-slate-100">
+                      {selectedItem.specialSection.points.map((point, idx) => (
+                        <li key={idx} className="flex items-start gap-2.5">
+                          <span
+                            aria-hidden="true"
+                            className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[#FFB300]"
+                          />
+                          <span>{point}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
                 {/* Takeaway Reflection */}
                 <div className="mt-6 rounded-xl border border-[#00E5FF]/20 bg-[#00E5FF]/[0.05] p-4">
                   <p className="text-xs font-semibold text-[#00E5FF]">

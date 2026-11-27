@@ -51,6 +51,10 @@ export interface SiteTranslations {
     load: {
       appliancesTitle: string;
       reset: string;
+      qtyLabel: string;
+      hoursLabel: string;
+      hoursUnit: string;
+      pumpHpLabel: string;
       customLoadLabel: string;
       customLoadHint: string;
       summaryTitle: string;
@@ -59,6 +63,7 @@ export interface SiteTranslations {
       currentFormulaNote: string;
       cableLabel: string;
       mcbLabel: string;
+      dailyEnergyPreview: string;
       emptyPrompt: string;
       sendToBill: string;
       disclaimer: string;
@@ -67,10 +72,13 @@ export interface SiteTranslations {
     };
     bill: {
       inputsTitle: string;
-      totalLoadLabel: string;
-      dailyHoursLabel: string;
       rateLabel: string;
       rateHint: string;
+      breakdownTitle: string;
+      editAppliancesBtn: string;
+      emptyBreakdown: string;
+      customRowLabel: string;
+      connectedLoadLabel: string;
       summaryTitle: string;
       dailyUnits: string;
       monthlyUnits: string;
@@ -266,22 +274,27 @@ export const TRANSLATIONS: Record<Language, SiteTranslations> = {
       kicker: 'Interactive Utilities',
       heading: 'EE Tools — Electrical Quick Calculators',
       subtitle:
-        'Estimate residential house load, single-phase current, general cable/MCB sizing, and monthly electricity bills in seconds.',
+        'Estimate residential house load, single-phase current, general cable/MCB sizing, and accurate per-appliance monthly electricity bills.',
       tabLoad: 'House Load & Wire Estimator',
       tabBill: 'Electricity Bill (kWh) Estimator',
       load: {
-        appliancesTitle: 'Select Appliances & Quantities',
+        appliancesTitle: 'Appliances, Quantity & Daily Hours',
         reset: 'Reset',
-        customLoadLabel: 'Custom Additional Load (Watts)',
+        qtyLabel: 'Qty',
+        hoursLabel: 'Hrs/day',
+        hoursUnit: 'h/d',
+        pumpHpLabel: 'Motor Rating',
+        customLoadLabel: 'Custom Additional Load',
         customLoadHint: 'e.g. iron, microwave, induction cooker',
         summaryTitle: 'Live Load Calculation',
-        totalPower: 'Total Power',
+        totalPower: 'Total Connected Load',
         estimatedCurrent: 'Estimated Current (220V, PF 0.85)',
         currentFormulaNote: 'Formula: I = P / (220 × 0.85)',
         cableLabel: 'Reference Main Cable Size',
         mcbLabel: 'Suggested MCB Rating',
+        dailyEnergyPreview: 'Auto Daily Usage',
         emptyPrompt: 'Add appliances to calculate',
-        sendToBill: 'Estimate Monthly Bill for This Load',
+        sendToBill: 'View Detailed Monthly Bill',
         disclaimer:
           'General reference only: final cable gauge and MCB breaker selection depend on cable length (voltage drop), conduit type, earthing, and on-site inspection by a certified electrician.',
         appliances: {
@@ -295,12 +308,16 @@ export const TRANSLATIONS: Record<Language, SiteTranslations> = {
         phaseNote: 'High load — consider split circuits or 3-phase review',
       },
       bill: {
-        inputsTitle: 'Usage Parameters',
-        totalLoadLabel: 'Total Load (Watts)',
-        dailyHoursLabel: 'Average Daily Usage (Hours / day)',
+        inputsTitle: 'Tariff Rate & Appliance Breakdown',
         rateLabel: 'Rate per Unit (BDT / kWh)',
         rateHint: 'Default 8.5 BDT/kWh (adjust to your tariff slab)',
-        summaryTitle: 'Estimated Energy & Bill',
+        breakdownTitle: 'Per-Appliance Daily Units (Watt × Qty × Hrs / 1000)',
+        editAppliancesBtn: 'Edit Appliances / Qty',
+        emptyBreakdown:
+          'No active appliances selected. Add quantities in the House Load tab to calculate your bill automatically.',
+        customRowLabel: 'Custom Load',
+        connectedLoadLabel: 'Connected Load',
+        summaryTitle: 'Estimated Energy & Monthly Bill',
         dailyUnits: 'Daily Consumption',
         monthlyUnits: 'Monthly Units (30 Days)',
         estimatedBill: 'Estimated Monthly Bill',
@@ -308,7 +325,7 @@ export const TRANSLATIONS: Record<Language, SiteTranslations> = {
         unitsSuffix: 'kWh',
         currencySymbol: '৳',
         bdtLabel: 'BDT',
-        note: 'Actual utility bills may vary slightly depending on progressive tariff slabs, demand charge, meter rent, and VAT.',
+        note: 'Calculated automatically from each appliance’s individual daily hours. Actual utility bills may vary slightly depending on progressive tariff slabs, demand charge, meter rent, and VAT.',
         reset: 'Reset Defaults',
       },
     },
@@ -508,22 +525,27 @@ export const TRANSLATIONS: Record<Language, SiteTranslations> = {
       kicker: 'ইন্টারেক্টিভ ইঞ্জিনিয়ারিং টুলস',
       heading: 'ইই টুলস — ইলেকট্রিক্যাল কুইক ক্যালকুলেটর',
       subtitle:
-        'বাসাবাড়ির মোট লোড, সিঙ্গেল-ফেজ কারেন্ট, তার ও MCB-এর সাধারণ ধারণা এবং মাসিক বিদ্যুৎ বিল মুহূর্তেই হিসাব করুন।',
+        'বাসাবাড়ির মোট লোড, সিঙ্গেল-ফেজ কারেন্ট, তার ও MCB-এর সাধারণ ধারণা এবং প্রতিটি যন্ত্রের আলাদা ব্যবহারের ঘণ্টা অনুযায়ী সঠিক মাসিক বিদ্যুৎ বিল হিসাব করুন।',
       tabLoad: 'হাউজ লোড ও তার নির্ণায়ক',
       tabBill: 'বিদ্যুৎ বিল (ইউনিট) হিসাব',
       load: {
-        appliancesTitle: 'বৈদ্যুতিক যন্ত্রপাতি ও সংখ্যা নির্বাচন করুন',
+        appliancesTitle: 'যন্ত্রপাতি, সংখ্যা ও দৈনিক ব্যবহারের ঘণ্টা',
         reset: 'রিসেট',
-        customLoadLabel: 'অতিরিক্ত কাস্টম লোড (ওয়াট)',
+        qtyLabel: 'সংখ্যা',
+        hoursLabel: 'ঘণ্টা/দিন',
+        hoursUnit: 'ঘণ্টা/দিন',
+        pumpHpLabel: 'মোটরের ক্ষমতা',
+        customLoadLabel: 'অতিরিক্ত কাস্টম লোড',
         customLoadHint: 'যেমন: ইস্ত্রি, মাইক্রোওয়েভ, ইন্ডাকশন কুকার',
         summaryTitle: 'তাৎক্ষণিক লোড হিসাব',
-        totalPower: 'মোট পাওয়ার',
+        totalPower: 'মোট সংযুক্ত লোড',
         estimatedCurrent: 'আনুমানিক কারেন্ট (২২০V, PF 0.85)',
         currentFormulaNote: 'সূত্র: I = P / (220 × 0.85)',
         cableLabel: 'মেইন তারের সাধারণ সাইজ',
         mcbLabel: 'সম্ভাব্য MCB ব্রেকার রেটিং',
+        dailyEnergyPreview: 'দৈনিক আনুমানিক ইউনিট',
         emptyPrompt: 'হিসাব দেখতে যন্ত্র যোগ করুন',
-        sendToBill: 'এই লোডের মাসিক বিল হিসাব করুন',
+        sendToBill: 'বিস্তারিত মাসিক বিল দেখুন',
         disclaimer:
           'সতর্কতা: এটি একটি সাধারণ প্রাথমিক ধারণা মাত্র। চূড়ান্ত তারের সাইজ ও MCB নির্বাচন তারের দূরত্ব (ভোল্টেজ ড্রপ), ওয়্যারিং পদ্ধতি ও সরেজমিন পরিদর্শনের ওপর নির্ভর করে।',
         appliances: {
@@ -537,11 +559,15 @@ export const TRANSLATIONS: Record<Language, SiteTranslations> = {
         phaseNote: 'অধিক লোড — একাধিক সার্কিট বা থ্রি-ফেজ যাচাই করুন',
       },
       bill: {
-        inputsTitle: 'বিদ্যুৎ ব্যবহারের তথ্য দিন',
-        totalLoadLabel: 'মোট লোড (ওয়াট / Watts)',
-        dailyHoursLabel: 'প্রতিদিন গড় ব্যবহার (ঘণ্টা / দিন)',
+        inputsTitle: 'ইউনিট দর ও যন্ত্রভিত্তিক হিসাব',
         rateLabel: 'প্রতি ইউনিট দর (টাকা / kWh)',
         rateHint: 'ডিফল্ট ৮.৫ টাকা/ইউনিট (আপনার ট্যারিফ অনুযায়ী বদলান)',
+        breakdownTitle: 'যন্ত্রভিত্তিক দৈনিক ইউনিট (ওয়াট × সংখ্যা × ঘণ্টা ÷ ১০০০)',
+        editAppliancesBtn: 'যন্ত্র ও সংখ্যা পরিবর্তন করুন',
+        emptyBreakdown:
+          'কোনো যন্ত্র নির্বাচিত নেই। স্বয়ংক্রিয় বিল হিসাব দেখতে হাউজ লোড ট্যাবে গিয়ে যন্ত্রের সংখ্যা যোগ করুন।',
+        customRowLabel: 'কাস্টম লোড',
+        connectedLoadLabel: 'সংযুক্ত লোড',
         summaryTitle: 'আনুমানিক ইউনিট ও মাসিক বিল',
         dailyUnits: 'দৈনিক ইউনিট',
         monthlyUnits: 'মাসিক ইউনিট (৩০ দিন)',
@@ -550,7 +576,7 @@ export const TRANSLATIONS: Record<Language, SiteTranslations> = {
         unitsSuffix: 'ইউনিট (kWh)',
         currencySymbol: '৳',
         bdtLabel: 'টাকা',
-        note: 'বিদ্যুৎ বিলের ধাপ (ট্যারিফ স্ল্যাব), ডিমান্ড চার্জ, মিটার ভাড়া ও ভ্যাটের কারণে প্রকৃত বিল কিছুটা ভিন্ন হতে পারে।',
+        note: 'প্রতিটি যন্ত্রের আলাদা দৈনিক ব্যবহারের ঘণ্টা যোগ করে এই হিসাব তৈরি করা হয়েছে। বিদ্যুৎ বিলের স্ল্যাব, ডিমান্ড চার্জ, মিটার ভাড়া ও ভ্যাটের কারণে প্রকৃত বিল কিছুটা ভিন্ন হতে পারে।',
         reset: 'ডিফল্ট রিসেট',
       },
     },
