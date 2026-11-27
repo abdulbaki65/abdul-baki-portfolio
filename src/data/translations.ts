@@ -160,6 +160,15 @@ export interface SiteTranslations {
     closeAria: string;
     openAria: string;
     sendAria: string;
+    micStartAria: string;
+    micStopAria: string;
+    micListening: string;
+    micLangLabel: string;
+    micUnsupported: string;
+    micPermissionDenied: string;
+    micNoSpeech: string;
+    micErrorGeneric: string;
+    micStopLabel: string;
   };
 }
 
@@ -393,6 +402,17 @@ export const TRANSLATIONS: Record<Language, SiteTranslations> = {
       closeAria: 'Close KHIORA AI chat',
       openAria: 'Open KHIORA AI assistant',
       sendAria: 'Send message',
+      micStartAria: 'Start voice input',
+      micStopAria: 'Stop voice input',
+      micListening: 'Listening... / শুনছি...',
+      micLangLabel: 'Voice',
+      micUnsupported:
+        'Voice input is not supported in this browser. Try Chrome, Edge, or Safari, or type your message below.',
+      micPermissionDenied:
+        'Microphone access was blocked. Please allow microphone permission in your browser settings to use voice input.',
+      micNoSpeech: 'No speech detected. Tap the microphone and try speaking again.',
+      micErrorGeneric: 'Could not capture voice right now. Please try again or type your message.',
+      micStopLabel: 'Stop',
     },
   },
   bn: {
@@ -623,6 +643,17 @@ export const TRANSLATIONS: Record<Language, SiteTranslations> = {
       closeAria: 'KHIORA AI চ্যাট বন্ধ করুন',
       openAria: 'KHIORA AI সহকারী খুলুন',
       sendAria: 'বার্তা পাঠান',
+      micStartAria: 'ভয়েস ইনপুট চালু করুন',
+      micStopAria: 'ভয়েস ইনপুট বন্ধ করুন',
+      micListening: 'শুনছি... / Listening...',
+      micLangLabel: 'ভয়েস',
+      micUnsupported:
+        'এই ব্রাউজারে ভয়েস ইনপুট সমর্থিত নয়। অনুগ্রহ করে Chrome, Edge বা Safari ব্যবহার করুন অথবা নিচে টাইপ করে প্রশ্ন করুন।',
+      micPermissionDenied:
+        'মাইক্রোফোনের অনুমতি দেওয়া হয়নি। ভয়েস ইনপুট ব্যবহার করতে ব্রাউজার সেটিংস থেকে মাইক্রোফোনের অনুমতি দিন।',
+      micNoSpeech: 'কোনো কথা শোনা যায়নি। মাইক্রোফোনে ট্যাপ করে আবার বলুন।',
+      micErrorGeneric: 'এই মুহূর্তে ভয়েস শোনা যায়নি। অনুগ্রহ করে আবার চেষ্টা করুন বা টাইপ করুন।',
+      micStopLabel: 'থামান',
     },
   },
 };

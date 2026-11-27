@@ -1,5 +1,15 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
-import { RotateCcw, Send, Sparkles, X, Zap } from 'lucide-react';
+import {
+  AlertCircle,
+  Mic,
+  MicOff,
+  RotateCcw,
+  Send,
+  Sparkles,
+  Square,
+  X,
+  Zap,
+} from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
 import { useLanguage } from '../context/LanguageContext';
 import { TRANSLATIONS } from '../data/translations';
@@ -9,6 +19,62 @@ interface ChatMessage {
   role: 'user' | 'model';
   text: string;
   isNotice?: boolean;
+}
+
+type SpeechLang = 'en-US' | 'bn-BD';
+
+interface SpeechRecognitionAlternativeLike {
+  transcript: string;
+}
+
+interface SpeechRecognitionResultLike {
+  readonly isFinal: boolean;
+  readonly length: number;
+  [index: number]: SpeechRecognitionAlternativeLike;
+}
+
+interface SpeechRecognitionEventLike extends Event {
+  readonly resultIndex: number;
+  readonly results: {
+    readonly length: number;
+    [index: number]: SpeechRecognitionResultLike;
+  };
+}
+
+interface SpeechRecognitionErrorEventLike extends Event {
+  readonly error: string;
+}
+
+interface SpeechRecognitionLike extends EventTarget {
+  lang: string;
+  continuous: boolean;
+  interimResults: boolean;
+  maxAlternatives: number;
+  onstart: ((this: SpeechRecognitionLike, ev: Event) => void) | null;
+  onresult:
+    | ((this: SpeechRecognitionLike, ev: SpeechRecognitionEventLike) => void)
+    | null;
+  onerror:
+    | ((
+        this: SpeechRecognitionLike,
+        ev: SpeechRecognitionErrorEventLike
+      ) => void)
+    | null;
+  onend: ((this: SpeechRecognitionLike, ev: Event) => void) | null;
+  start: () => void;
+  stop: () => void;
+  abort: () => void;
+}
+
+type SpeechRecognitionConstructor = new () => SpeechRecognitionLike;
+
+function getSpeechRecognitionCtor(): SpeechRecognitionConstructor | null {
+  if (typeof window === 'undefined') return null;
+  const win = window as unknown as {
+    SpeechRecognition?: SpeechRecognitionConstructor;
+    webkitSpeechRecognition?: SpeechRecognitionConstructor;
+  };
+  return win.SpeechRecognition || win.webkitSpeechRecognition || null;
 }
 
 export function KhioraChatbot() {
@@ -26,6 +92,15 @@ export function KhioraChatbot() {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
+  // Voice Input (Web Speech API) state — automatically follows main navbar EN | বাং setting
+  const recognitionLang: SpeechLang = lang === 'bn' ? 'bn-BD' : 'en-US';
+  const [isListening, setIsListening] = useState(false);
+  const [interimTranscript, setInterimTranscript] = useState('');
+  const [voiceNotice, setVoiceNotice] = useState<string | null>(null);
+
+  const isSpeechSupported = getSpeechRecognitionCtor() !== null;
+  const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
+  const baseInputBeforeSpeechRef = useRef<string>('');
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
 
@@ -43,6 +118,43 @@ export function KhioraChatbot() {
       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }
   }, [messages, isLoading, isOpen]);
+
+  // Stop any active speech recognition cleanly when chat closes or unmounts
+  const stopListening = () => {
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.stop();
+      } catch {
+        // Ignore stop errors if already ended
+      }
+    }
+  };
+
+  useEffect(() => {
+    if (!isOpen && recognitionRef.current) {
+      try {
+        recognitionRef.current.abort();
+      } catch {
+        // Ignore abort errors
+      }
+      recognitionRef.current = null;
+      setIsListening(false);
+      setInterimTranscript('');
+    }
+  }, [isOpen]);
+
+  useEffect(() => {
+    return () => {
+      if (recognitionRef.current) {
+        try {
+          recognitionRef.current.abort();
+        } catch {
+          // Ignore cleanup errors
+        }
+        recognitionRef.current = null;
+      }
+    };
+  }, []);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -64,9 +176,119 @@ export function KhioraChatbot() {
     };
   }, [isOpen]);
 
+  const startListening = () => {
+    const SpeechRecognitionCtor = getSpeechRecognitionCtor();
+    if (!SpeechRecognitionCtor) {
+      setVoiceNotice(t.micUnsupported);
+      return;
+    }
+
+    if (isLoading) return;
+
+    // Abort any lingering session before starting a fresh one
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.abort();
+      } catch {
+        // Ignore
+      }
+      recognitionRef.current = null;
+    }
+
+    setVoiceNotice(null);
+    setInterimTranscript('');
+    baseInputBeforeSpeechRef.current = input.trim();
+
+    try {
+      const recognition = new SpeechRecognitionCtor();
+      recognition.lang = recognitionLang;
+      recognition.continuous = false;
+      recognition.interimResults = true;
+      recognition.maxAlternatives = 1;
+
+      recognition.onstart = () => {
+        setIsListening(true);
+      };
+
+      recognition.onresult = (event: SpeechRecognitionEventLike) => {
+        let finalText = '';
+        let interimText = '';
+
+        for (let i = 0; i < event.results.length; i++) {
+          const result = event.results[i];
+          const transcript = result[0]?.transcript ?? '';
+          if (result.isFinal) {
+            finalText += transcript;
+          } else {
+            interimText += transcript;
+          }
+        }
+
+        const combined = `${finalText} ${interimText}`.trim();
+        setInterimTranscript(interimText.trim());
+
+        if (combined) {
+          const prefix = baseInputBeforeSpeechRef.current;
+          const nextValue = prefix ? `${prefix} ${combined}` : combined;
+          setInput(nextValue.slice(0, 1500));
+        }
+      };
+
+      recognition.onerror = (event: SpeechRecognitionErrorEventLike) => {
+        setIsListening(false);
+        setInterimTranscript('');
+        recognitionRef.current = null;
+
+        if (event.error === 'aborted') {
+          return;
+        }
+        if (
+          event.error === 'not-allowed' ||
+          event.error === 'service-not-allowed'
+        ) {
+          setVoiceNotice(t.micPermissionDenied);
+        } else if (event.error === 'no-speech') {
+          setVoiceNotice(t.micNoSpeech);
+        } else {
+          setVoiceNotice(t.micErrorGeneric);
+        }
+      };
+
+      recognition.onend = () => {
+        setIsListening(false);
+        setInterimTranscript('');
+        recognitionRef.current = null;
+        inputRef.current?.focus();
+      };
+
+      recognitionRef.current = recognition;
+      recognition.start();
+    } catch {
+      setIsListening(false);
+      setVoiceNotice(t.micErrorGeneric);
+    }
+  };
+
+  const handleMicButtonClick = () => {
+    if (!isSpeechSupported) {
+      setVoiceNotice(t.micUnsupported);
+      return;
+    }
+    if (isListening) {
+      stopListening();
+    } else {
+      startListening();
+    }
+  };
+
   const sendMessage = async (rawText: string) => {
     const trimmed = rawText.trim();
     if (!trimmed || isLoading) return;
+
+    if (isListening) {
+      stopListening();
+    }
+    setVoiceNotice(null);
 
     const userMsg: ChatMessage = {
       id: `user-${Date.now()}`,
@@ -180,6 +402,8 @@ export function KhioraChatbot() {
 
   const handleReset = () => {
     if (isLoading) return;
+    if (isListening) stopListening();
+    setVoiceNotice(null);
     setMessages([{ id: 'welcome', role: 'model', text: t.welcome }]);
     setInput('');
   };
@@ -197,7 +421,7 @@ export function KhioraChatbot() {
             exit={{ opacity: 0, y: 14, scale: 0.96 }}
             transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
             aria-label="KHIORA AI Assistant"
-            className="fixed inset-x-3 bottom-20 flex max-h-[min(76vh,560px)] flex-col overflow-hidden rounded-2xl border border-[#00E5FF]/35 bg-[#070B14]/95 shadow-[0_24px_70px_-14px_rgba(0,0,0,0.88),0_0_32px_-12px_rgba(0,229,255,0.28)] backdrop-blur-xl sm:inset-x-auto sm:bottom-22 sm:right-6 sm:w-[396px]"
+            className="fixed inset-x-3 bottom-20 flex max-h-[min(78vh,580px)] flex-col overflow-hidden rounded-2xl border border-[#00E5FF]/35 bg-[#070B14]/95 shadow-[0_24px_70px_-14px_rgba(0,0,0,0.88),0_0_32px_-12px_rgba(0,229,255,0.28)] backdrop-blur-xl sm:inset-x-auto sm:bottom-22 sm:right-6 sm:w-[404px]"
           >
             {/* Header with subtle PCB accent line */}
             <div className="relative flex items-center justify-between gap-3 border-b border-slate-800/90 bg-[#0F172A]/90 px-4 py-3.5">
@@ -344,11 +568,76 @@ export function KhioraChatbot() {
               <div ref={messagesEndRef} />
             </div>
 
-            {/* Composer Form */}
+            {/* Composer & Voice Controls */}
             <form
               onSubmit={handleSubmit}
               className="border-t border-slate-800/90 bg-[#0F172A]/90 p-3"
             >
+              {/* Active Listening Banner */}
+              <AnimatePresence>
+                {isListening && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 6 }}
+                    transition={{ duration: 0.15 }}
+                    role="status"
+                    aria-live="polite"
+                    className="font-bn mb-2.5 flex items-center justify-between gap-2 rounded-xl border border-rose-500/45 bg-gradient-to-r from-rose-500/15 via-[#00E5FF]/10 to-[#0F172A] px-3 py-2 text-xs"
+                  >
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="relative flex h-2.5 w-2.5 shrink-0">
+                        <span
+                          aria-hidden="true"
+                          className="absolute inline-flex h-full w-full animate-ping rounded-full bg-rose-400 opacity-75 motion-reduce:animate-none"
+                        />
+                        <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-rose-500" />
+                      </span>
+                      <span className="truncate font-semibold text-rose-200">
+                        {t.micListening}
+                      </span>
+                      {interimTranscript && (
+                        <span className="truncate text-slate-300">
+                          “{interimTranscript}”
+                        </span>
+                      )}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={stopListening}
+                      className="rounded-md border border-rose-400/40 bg-rose-500/20 px-2 py-0.5 text-[11px] font-semibold text-rose-100 hover:bg-rose-500/35 whitespace-nowrap shrink-0"
+                    >
+                      {t.micStopLabel}
+                    </button>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              {/* Polite Voice Notice (unsupported browser / permission denied) */}
+              {voiceNotice && !isListening && (
+                <div
+                  role="alert"
+                  className="font-bn mb-2.5 flex items-start justify-between gap-2 rounded-xl border border-[#FFB300]/35 bg-[#FFB300]/10 px-3 py-2 text-xs text-amber-100"
+                >
+                  <div className="flex items-start gap-2 min-w-0">
+                    <AlertCircle
+                      className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#FFB300]"
+                      aria-hidden="true"
+                    />
+                    <span className="leading-relaxed">{voiceNotice}</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setVoiceNotice(null)}
+                    aria-label="Dismiss voice notice"
+                    className="rounded px-1 text-amber-200/80 hover:text-amber-50 shrink-0"
+                  >
+                    ✕
+                  </button>
+                </div>
+              )}
+
+              {/* Input + Microphone + Send Row */}
               <div className="flex items-center gap-2">
                 <label htmlFor="khiora-chat-input" className="sr-only">
                   {t.placeholder}
@@ -362,8 +651,50 @@ export function KhioraChatbot() {
                   disabled={isLoading}
                   maxLength={1500}
                   placeholder={t.placeholder}
-                  className="font-bn min-h-[44px] flex-1 rounded-xl border border-slate-700/80 bg-[#070B14]/90 px-3.5 py-2 text-sm text-slate-100 placeholder:text-slate-500 transition-colors focus:border-[#00E5FF] focus:outline-none focus:ring-2 focus:ring-[#00E5FF]/20 disabled:opacity-60"
+                  className="font-bn min-h-[44px] min-w-0 flex-1 rounded-xl border border-slate-700/80 bg-[#070B14]/90 px-3.5 py-2 text-sm text-slate-100 placeholder:text-slate-500 transition-colors focus:border-[#00E5FF] focus:outline-none focus:ring-2 focus:ring-[#00E5FF]/20 disabled:opacity-60"
                 />
+
+                {/* Microphone Button */}
+                <button
+                  type="button"
+                  onClick={handleMicButtonClick}
+                  disabled={isLoading}
+                  aria-pressed={isListening}
+                  aria-label={isListening ? t.micStopAria : t.micStartAria}
+                  title={
+                    !isSpeechSupported
+                      ? t.micUnsupported
+                      : isListening
+                        ? t.micStopAria
+                        : t.micStartAria
+                  }
+                  className={`relative inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border transition-all duration-150 disabled:pointer-events-none disabled:opacity-45 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#00E5FF] ${
+                    isListening
+                      ? 'border-rose-400/75 bg-rose-500/20 text-rose-300 shadow-[0_0_20px_-4px_rgba(244,63,94,0.7),0_0_16px_-6px_rgba(0,229,255,0.6)]'
+                      : !isSpeechSupported
+                        ? 'border-slate-700/70 bg-slate-900/60 text-slate-500 hover:border-[#FFB300]/50 hover:text-[#FFB300]'
+                        : 'border-slate-700/80 bg-[#070B14]/90 text-[#00E5FF] hover:border-[#00E5FF]/60 hover:bg-[#00E5FF]/12'
+                  }`}
+                >
+                  {isListening && (
+                    <span
+                      aria-hidden="true"
+                      className="absolute inset-0 animate-ping rounded-xl border border-[#00E5FF]/60 bg-rose-500/20 opacity-70 motion-reduce:animate-none"
+                    />
+                  )}
+                  {isListening ? (
+                    <Square
+                      className="relative h-4 w-4 fill-current"
+                      aria-hidden="true"
+                    />
+                  ) : !isSpeechSupported ? (
+                    <MicOff className="relative h-4 w-4" aria-hidden="true" />
+                  ) : (
+                    <Mic className="relative h-4 w-4" aria-hidden="true" />
+                  )}
+                </button>
+
+                {/* Send Button */}
                 <button
                   type="submit"
                   disabled={isLoading || !input.trim()}
